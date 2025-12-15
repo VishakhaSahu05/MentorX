@@ -7,7 +7,6 @@ const Navbar = () => {
         <div className="text-3xl font-semibold tracking-wide">
           Mentor<span className="text-emerald-400">X</span>
         </div>
-
         <nav className="hidden md:flex gap-8 text-base text-gray-300">
           <a className="hover:text-emerald-400 cursor-pointer">Engineering</a>
           <a className="hover:text-emerald-400 cursor-pointer">Design</a>
