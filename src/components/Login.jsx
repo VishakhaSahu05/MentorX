@@ -1,17 +1,22 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addUser } from "../utils/userSlice";
+import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../utils/constant";
 
 const Login = () => {
   const [emailId, setEmailId] = useState("");
   const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); 
-
+    e.preventDefault();
     try {
       const res = await axios.post(
-        "http://localhost:3000/login",
+        BASE_URL + "/login",
         {
           emailId,
           password,
@@ -21,7 +26,12 @@ const Login = () => {
         }
       );
       console.log("Login successful:", res.data);
-      // later: navigate("/feed")
+      dispatch(addUser(res.data));
+      if (res.data.role === "student") {
+        navigate("/feed");
+      } else if (res.data.role === "mentor") {
+        navigate("/mentor/dashboard");
+      }
     } catch (err) {
       console.error("Login error:", err);
     }
@@ -30,7 +40,6 @@ const Login = () => {
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">
       <div className="w-full max-w-md bg-[#0f2f26] rounded-2xl p-8 shadow-xl text-white">
-
         <h2 className="text-3xl font-semibold text-center mb-2">
           Welcome back
         </h2>
@@ -42,9 +51,7 @@ const Login = () => {
         <form className="space-y-5" onSubmit={handleLogin}>
           {/* Email */}
           <div>
-            <label className="block text-sm mb-1 text-gray-300">
-              Email
-            </label>
+            <label className="block text-sm mb-1 text-gray-300">Email</label>
             <input
               type="email"
               placeholder="you@example.com"
@@ -55,9 +62,7 @@ const Login = () => {
             />
           </div>
           <div>
-            <label className="block text-sm mb-1 text-gray-300">
-              Password
-            </label>
+            <label className="block text-sm mb-1 text-gray-300">Password</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -80,7 +85,6 @@ const Login = () => {
             Sign up
           </Link>
         </p>
-
       </div>
     </div>
   );

@@ -31,3 +31,9 @@
 - Installed axios 
 - CORS installation in backend => add middleware to with configuration : origin and credentials : true
 - Whenever making API call so pass {withCredentials:true}
+- Install react - redux  + @reduxjs/toolkit
+- configureStore => Provider => add reducer to the store
+- Login and validated if data is coming properly in the store
+- NavBar should update as soon as user logs in
+- Refactored our code to add constants file 
+
