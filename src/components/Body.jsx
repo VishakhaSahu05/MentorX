@@ -1,11 +1,39 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
-import { Outlet } from "react-router-dom";
+import axios from "axios";
+import { Outlet, useNavigate } from "react-router-dom";
+import { BASE_URL } from "../utils/constant";
+import { useDispatch, useSelector } from "react-redux";
+import { addUser, removeUser } from "../utils/userSlice";
 
 const Body = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const userData = useSelector((store) => store.user);
+
+  const fetchUser = async () => {
+    if (userData) return;
+
+    try {
+      const res = await axios.get(BASE_URL + "/profile/view", {
+        withCredentials: true,
+      });
+      dispatch(addUser(res.data));
+    } catch (err) {
+      if (err.response?.status === 401) {
+        dispatch(removeUser());
+        navigate("/"); // landing page
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-linear-to-br from-[#0b1f1a] via-[#0f2d25] to-[#071612]">
+    <div className="min-h-screen flex flex-col bg-[#eefaf5]">
       <Navbar />
       <main className="grow">
         <Outlet />

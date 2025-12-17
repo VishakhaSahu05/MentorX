@@ -9,17 +9,14 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Feed from "./components/Feed";
 import MentorDashboard from "./components/MentorDashboard";
+import Profile from "./components/Profile";
 
 const App = () => {
   return (
     <Provider store={appStore}>
       <BrowserRouter>
         <Routes>
-
-          {/* Layout Route (Navbar lives here via Body + Outlet) */}
           <Route element={<Body />}>
-
-            {/* Public Home */}
             <Route
               path="/"
               element={
@@ -29,16 +26,11 @@ const App = () => {
                 </>
               }
             />
-
-            {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-
-            {/* Student */}
             <Route path="/feed" element={<Feed />} />
-
-            {/* Mentor */}
             <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+            <Route path="/profile" element={<Profile />} />
 
           </Route>
 

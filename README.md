@@ -36,4 +36,7 @@
 - Login and validated if data is coming properly in the store
 - NavBar should update as soon as user logs in
 - Refactored our code to add constants file 
-
+- fixed the logout issue  , One should not access routes without login
+- if Token is not present redirect user to login page
+- changed the css light - green
+- Build logout 

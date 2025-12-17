@@ -1,21 +1,40 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import axios from "axios";
+import { removeUser } from "../utils/userSlice";
+import { BASE_URL } from "../utils/constant";
 
 const Navbar = () => {
   const user = useSelector((store) => store.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        BASE_URL+"/logout",
+        {},
+        { withCredentials: true }
+      );
+      dispatch(removeUser());
+      navigate("/");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0b1f1a]/80 backdrop-blur">
+    <header className="fixed top-0 left-0 w-full z-100 border-b border-white/10 bg-[#0b1f1a]/90 backdrop-blur">
       <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between text-white">
 
-        {/* Logo */}
+        {/* LOGO */}
         <Link to="/" className="text-3xl font-semibold tracking-wide">
           Mentor<span className="text-emerald-400">X</span>
         </Link>
 
-        {/* Center links */}
+        {/* CENTER LINKS */}
         <nav className="hidden md:flex gap-10 text-lg text-gray-300">
           <span className="hover:text-emerald-400 cursor-pointer">Engineering</span>
           <span className="hover:text-emerald-400 cursor-pointer">Design</span>
@@ -23,7 +42,7 @@ const Navbar = () => {
           <span className="hover:text-emerald-400 cursor-pointer">Startup</span>
         </nav>
 
-        {/* Right side */}
+        {/* RIGHT SIDE */}
         <div className="flex items-center gap-6 relative">
 
           {/* BEFORE LOGIN */}
@@ -32,6 +51,7 @@ const Navbar = () => {
               <Link to="/login" className="text-lg text-gray-300 hover:text-white">
                 Login
               </Link>
+
               <Link
                 to="/signup"
                 className="px-5 py-2.5 text-lg rounded-full border border-white/30 hover:border-white"
@@ -49,10 +69,7 @@ const Navbar = () => {
                 className="flex items-center gap-3 focus:outline-none"
               >
                 <span className="text-sm text-gray-300 hidden sm:block">
-                  Hi,{" "}
-                  <span className="text-white font-medium">
-                    {user.firstName}
-                  </span>
+                  Hi, <span className="text-white font-medium">{user.firstName}</span>
                 </span>
 
                 <img
@@ -62,26 +79,16 @@ const Navbar = () => {
                 />
               </button>
 
-              {/* Dropdown ONLY UI */}
               {open && (
                 <div className="absolute right-0 mt-3 w-48 rounded-xl bg-[#0f2f26] border border-white/10 shadow-xl overflow-hidden">
-                  <Link
-                    to="/connections"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10"
-                  >
+                  <Link to="/connections" className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
                     Connections
                   </Link>
-
-                  <Link
-                    to="/profile"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10"
-                  >
+                  <Link to="/profile" className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
                     Profile
                   </Link>
-
                   <span
+                    onClick={handleLogout}
                     className="block px-4 py-3 text-sm text-red-400 hover:bg-white/10 cursor-pointer"
                   >
                     Logout
@@ -91,7 +98,7 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Common CTA */}
+          {/* CTA */}
           <Link
             to="/"
             className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
