@@ -10,6 +10,9 @@ import Signup from "./components/Signup";
 import Feed from "./components/Feed";
 import MentorDashboard from "./components/MentorDashboard";
 import Profile from "./components/Profile";
+import Connection from "./components/Connection";
+import Requests from "./components/Requests";
+
 
 const App = () => {
   return (
@@ -31,6 +34,8 @@ const App = () => {
             <Route path="/feed" element={<Feed />} />
             <Route path="/mentor/dashboard" element={<MentorDashboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/connections" element={<Connection />} />
+            <Route path = "/requests"  element = {<Requests/>}/>
 
           </Route>
 

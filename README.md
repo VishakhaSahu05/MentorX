@@ -40,3 +40,11 @@
 - if Token is not present redirect user to login page
 - changed the css light - green
 - Build logout 
+- Edit Profile feature complete with live preview
+- New page to See all my Connections
+- New page to See all my Connection Requests
+- Feature - Accept/Reject Connection Request
+Remaining :
+- Send connection request from feed
+- signup new user
+- E2E testing

@@ -14,7 +14,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await axios.post(
-        BASE_URL+"/logout",
+        `${BASE_URL}/logout`,
         {},
         { withCredentials: true }
       );
@@ -25,8 +25,19 @@ const Navbar = () => {
     }
   };
 
+  const handleBrowseMentors = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (user.role === "student") {
+      navigate("/feed");
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 w-full z-100 border-b border-white/10 bg-[#0b1f1a]/90 backdrop-blur">
+    <header className="fixed top-0 left-0 w-full z-50 border-b border-white/10 bg-[#0b1f1a]/90 backdrop-blur">
       <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between text-white">
 
         {/* LOGO */}
@@ -48,7 +59,10 @@ const Navbar = () => {
           {/* BEFORE LOGIN */}
           {!user && (
             <>
-              <Link to="/login" className="text-lg text-gray-300 hover:text-white">
+              <Link
+                to="/login"
+                className="text-lg text-gray-300 hover:text-white"
+              >
                 Login
               </Link>
 
@@ -69,7 +83,10 @@ const Navbar = () => {
                 className="flex items-center gap-3 focus:outline-none"
               >
                 <span className="text-sm text-gray-300 hidden sm:block">
-                  Hi, <span className="text-white font-medium">{user.firstName}</span>
+                  Hi,{" "}
+                  <span className="text-white font-medium">
+                    {user.firstName}
+                  </span>
                 </span>
 
                 <img
@@ -81,12 +98,31 @@ const Navbar = () => {
 
               {open && (
                 <div className="absolute right-0 mt-3 w-48 rounded-xl bg-[#0f2f26] border border-white/10 shadow-xl overflow-hidden">
-                  <Link to="/connections" className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
+
+                  {/* 🔥 REQUESTS (ONLY FOR MENTOR) */}
+                  {user.role === "mentor" && (
+                    <Link
+                      to="/requests"
+                      className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10"
+                    >
+                      Requests
+                    </Link>
+                  )}
+
+                  <Link
+                    to="/connections"
+                    className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10"
+                  >
                     Connections
                   </Link>
-                  <Link to="/profile" className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
+
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/10"
+                  >
                     Profile
                   </Link>
+
                   <span
                     onClick={handleLogout}
                     className="block px-4 py-3 text-sm text-red-400 hover:bg-white/10 cursor-pointer"
@@ -98,13 +134,15 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* CTA */}
-          <Link
-            to="/"
-            className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
-          >
-            Browse mentors
-          </Link>
+          {/* 🔥 BROWSE MENTORS (ONLY student / logged-out) */}
+          {(!user || user.role === "student") && (
+            <button
+              onClick={handleBrowseMentors}
+              className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
+            >
+              Browse mentors
+            </button>
+          )}
 
         </div>
       </div>
