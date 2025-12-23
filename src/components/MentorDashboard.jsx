@@ -13,7 +13,7 @@ export default function MentorDashboard() {
 
   const [openCalendar, setOpenCalendar] = useState(false);
 
-  //Fetch accepted connections (backend already filters)
+  //Fetch accepted connections 
   useEffect(() => {
     const fetchConnections = async () => {
       try {
