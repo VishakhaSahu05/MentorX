@@ -1,4 +1,4 @@
-# MentorX
+# MentorX PHASE-1
 
 - Created a Vite and React application
 - Remove unecesssary code and intialize git
@@ -47,4 +47,31 @@
 Remaining :
 - Send connection request from feed
 - signup new user
+- MentorDashboard
 - E2E testing
+
+# PHASE - 2
+
+- Frontend (React)
+   |
+   | 1. User selects image/video
+   |
+- Backend (Express)
+   |
+   | 2. Receives file
+   | 3. Uploads to AWS S3
+   |
+- AWS S3
+   |
+   | 4. Returns public URL
+   |
+- Backend
+   |
+   | 5. Saves post data + URL in MongoDB
+   |
+- Frontend
+   |
+   | 6. Fetches posts and renders feed
+
+
+- The mentor creates a post → media is uploaded to S3 → the URL is saved in MongoDB → the post appears in the student feed.

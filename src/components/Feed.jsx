@@ -1,21 +1,25 @@
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BASE_URL } from "../utils/constant";
 import { useDispatch, useSelector } from "react-redux";
 import { addFeed } from "../utils/feedSlice";
+ import { removeUserFromFeed } from "../utils/feedSlice";
 
 const Feed = () => {
   const feed = useSelector((store) => store.feed); // null | array
   const dispatch = useDispatch();
+  const [sendingId, setSendingId] = useState(null);
 
+  // Fetch mentors feed
   const getFeed = async () => {
     if (feed !== null) return;
 
     try {
-      const res = await axios.get(BASE_URL + "/feed", {
-        withCredentials: true,
-      });
-      dispatch(addFeed(res.data.mentors));
+      const res = await axios.get(
+        BASE_URL + "/feed",
+        { withCredentials: true }
+      );
+      dispatch(addFeed(res.data.mentors || []));
     } catch (err) {
       console.error("Failed to load feed", err);
     }
@@ -24,6 +28,31 @@ const Feed = () => {
   useEffect(() => {
     getFeed();
   }, []);
+
+// SEND CONNECTION REQUEST (STUDENT → MENTOR)
+const handleSendRequest = async (mentorId) => {
+  try {
+    setSendingId(mentorId);
+
+    await axios.post(
+      `${BASE_URL}/request/send/interested/${mentorId}`,
+      {},
+      { withCredentials: true }
+    );
+
+    // UI se mentor hata do
+    dispatch(removeUserFromFeed(mentorId));
+
+  } catch (err) {
+    console.error(
+      "Send request failed:",
+      err.response?.data || err.message
+    );
+    alert(err.response?.data?.message || "Failed to send request!");
+  } finally {
+    setSendingId(null);
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-6">
@@ -63,7 +92,6 @@ const Feed = () => {
                   {mentor.firstName} {mentor.lastName}
                 </h2>
 
-                {/* ✅ Department badge */}
                 <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-100 text-emerald-700">
                   {mentor.department}
                 </span>
@@ -104,8 +132,14 @@ const Feed = () => {
                 View Profile
               </button>
 
-              <button className="flex-1 py-3 rounded-full border border-emerald-500 text-emerald-600 font-semibold hover:bg-emerald-50">
-                Connect
+              <button
+                onClick={() => handleSendRequest(mentor._id)}
+                disabled={sendingId === mentor._id}
+                className="flex-1 py-3 rounded-full border border-emerald-500 text-emerald-600 font-semibold hover:bg-emerald-50 disabled:opacity-50"
+              >
+                {sendingId === mentor._id
+                  ? "Sending..."
+                  : "Connect"}
               </button>
             </div>
           </div>
