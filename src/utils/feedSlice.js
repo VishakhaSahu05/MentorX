@@ -2,20 +2,24 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const feedSlice = createSlice({
   name: "feed",
-  initialState: null,
+  initialState: [], 
   reducers: {
+    // page 1 load
     addFeed: (state, action) => {
       return action.payload;
     },
 
-    removeUserFromFeed: (state, action) => {
-      if (!Array.isArray(state)) return state;
-      return state.filter(
-        (user) => user._id !== action.payload
-      );
+    // page 2,3,4...
+    appendFeed: (state, action) => {
+      state.push(...action.payload);
+    },
+
+    // when component unmounts / logout
+    resetFeed: () => {
+      return [];
     },
   },
 });
 
-export const { addFeed, removeUserFromFeed } = feedSlice.actions;
+export const { addFeed, appendFeed, resetFeed } = feedSlice.actions;
 export default feedSlice.reducer;
