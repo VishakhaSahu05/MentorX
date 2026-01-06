@@ -1,359 +1,277 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../utils/constant";
-import { useSelector, useDispatch } from "react-redux";
-import { addConnections } from "../utils/connectionSlice";
 
 export default function MentorDashboard() {
-  const dispatch = useDispatch();
+  const { id } = useParams(); // undefined => own dashboard
+  const feedRef = useRef(null);
 
-  const user = useSelector((store) => store.user);
-  const connections = useSelector((store) => store.connection || []);
-  const followersCount = connections.length;
-
-  
+  const [dashboard, setDashboard] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [creatingPost, setCreatingPost] = useState(false);
-  const [openCalendar, setOpenCalendar] = useState(false);
-  const [selectedDates, setSelectedDates] = useState([]);
-  const [file, setFile] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  const [showUpload, setShowUpload] = useState(false);
   const [caption, setCaption] = useState("");
+  const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [activePostIndex, setActivePostIndex] = useState(null);
 
-  const [openMenuPostId, setOpenMenuPostId] = useState(null);
-  const [editingPost, setEditingPost] = useState(null);
-  const [editCaption, setEditCaption] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState("CONNECT");
 
-  
-  const [likes, setLikes] = useState({});
-  const [comments, setComments] = useState({});
-
-  /*FETCH POSTS */
+  /* ================= FETCH DASHBOARD ================= */
   useEffect(() => {
-    const fetchMyPosts = async () => {
-      const res = await axios.get(BASE_URL + "/my-posts", {
+    const fetchDashboard = async () => {
+      try {
+        const url = id
+          ? `${BASE_URL}/mentor/${id}`
+          : `${BASE_URL}/mentor`;
+
+        const res = await axios.get(url, { withCredentials: true });
+
+        setDashboard(res.data);
+        setPosts(res.data.posts || []);
+        setConnectionStatus(res.data.connectionStatus || "CONNECT");
+      } catch (err) {
+        console.error("Dashboard error", err);
+      }
+    };
+
+    fetchDashboard();
+  }, [id]);
+
+  /* ================= SCROLL ================= */
+  useEffect(() => {
+    if (activeIndex !== null && feedRef.current) {
+      feedRef.current.children[activeIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [activeIndex]);
+
+  /* ================= CONNECT ================= */
+  const handleConnect = async () => {
+    try {
+      await axios.post(
+        `${BASE_URL}/request/send/${id}`,
+        {},
+        { withCredentials: true }
+      );
+      setConnectionStatus("REQUESTED");
+    } catch (err) {
+      console.error("Connect failed", err);
+    }
+  };
+
+  /* ================= UPLOAD ================= */
+  const handleUpload = async () => {
+    if (!file) return alert("Select an image");
+
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("media", file);
+      fd.append("caption", caption);
+
+      await axios.post(`${BASE_URL}/content/upload`, fd, {
+        withCredentials: true,
+      });
+
+      setShowUpload(false);
+      setCaption("");
+      setFile(null);
+
+      const res = await axios.get(`${BASE_URL}/mentor`, {
         withCredentials: true,
       });
       setPosts(res.data.posts || []);
-    };
-    fetchMyPosts();
-  }, []);
-
-  /* FETCH FOLLOWERS */
-  useEffect(() => {
-    const fetchConnections = async () => {
-      const res = await axios.get(BASE_URL + "/user/connection", {
-        withCredentials: true,
-      });
-      dispatch(addConnections(res.data.connections || []));
-    };
-    fetchConnections();
-  }, [dispatch]);
-
-  /* CREATE POST  */
-  const handleCreatePost = async () => {
-    if (!file) return alert("Please select a file");
-
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("media", file);
-    fd.append("caption", caption);
-
-    const res = await axios.post(BASE_URL + "/upload", fd, {
-      withCredentials: true,
-    });
-
-    setPosts((p) => [res.data, ...p]);
-    setFile(null);
-    setCaption("");
-    setCreatingPost(false);
-    setUploading(false);
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  /*Delete Post */
-  const handleDeletePost = async (id) => {
-    if (!window.confirm("Delete this post?")) return;
+  if (!dashboard) return null;
 
-    await axios.delete(BASE_URL + `/post/${id}`, {
-      withCredentials: true,
-    });
-
-    setPosts((p) => p.filter((x) => x._id !== id));
-    setActivePostIndex(null);
-    setOpenMenuPostId(null);
-  };
-
-  /* Edit Post */
-  const handleEditPost = async () => {
-    const res = await axios.patch(
-      BASE_URL + `/post/${editingPost._id}`,
-      { caption: editCaption },
-      { withCredentials: true }
-    );
-
-    setPosts((p) => p.map((x) => (x._id === editingPost._id ? res.data : x)));
-    setEditingPost(null);
-  };
+  const { profile, stats, view } = dashboard;
+  const isOwner = view === "OWNER";
 
   return (
-    <div className="bg-[#f3f2ef] min-h-screen pt-20">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Profile*/}
+    <div className="pt-20 bg-[#f3f2ef] min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 space-y-6">
+
+        {/* ================= PROFILE ================= */}
         <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="h-36 bg-linear-to-r from-emerald-900 to-emerald-600" />
+          <div className="h-32 bg-gradient-to-r from-emerald-700 to-teal-600" />
           <div className="p-6 relative">
             <img
-              src={user?.profilePic || "/default-avatar.png"}
+              src={profile.profilePic}
               className="w-28 h-28 rounded-full border-4 border-white absolute -top-14"
             />
             <div className="mt-16">
               <h1 className="text-2xl font-bold">
-                {user?.firstName} {user?.lastName}
+                {profile.firstName} {profile.lastName}
               </h1>
-              <p className="text-sm text-gray-600">Mentor</p>
+              <p className="text-gray-600">Mentor</p>
+
               <div className="flex gap-6 mt-2 text-sm text-gray-600">
-                <span>{followersCount} Followers</span>
-                <span>⭐ 4.6 Rating</span>
+                <span>{stats.followersCount} Followers</span>
+                <span>⭐ {stats.rating}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-3">
+                {profile.skills?.map((skill) => (
+                  <span
+                    key={skill}
+                    className="px-3 py-1 text-xs rounded-full bg-black/5"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+
+              {!isOwner && (
+                <button
+                  onClick={handleConnect}
+                  disabled={connectionStatus !== "CONNECT"}
+                  className={`mt-4 px-6 py-2 rounded-full font-semibold
+                    ${
+                      connectionStatus === "CONNECT"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-300 text-gray-600"
+                    }`}
+                >
+                  {connectionStatus}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ================= OWNER ACTIONS ================= */}
+        {isOwner && !id && (
+          <>
+            <div
+              onClick={() => setShowUpload(true)}
+              className="bg-white rounded-xl shadow p-4 flex gap-3 cursor-pointer"
+            >
+              <img
+                src={profile.profilePic}
+                className="w-12 h-12 rounded-full"
+              />
+              <div className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-gray-500">
+                ✨ Share something with your students
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Post Card */}
-        <div
-          onClick={() => setCreatingPost(true)}
-          className="bg-white rounded-xl shadow p-4 flex gap-3 cursor-pointer hover:bg-gray-50"
-        >
-          <img src={user?.profilePic} className="w-12 h-12 rounded-full" />
-          <div className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-gray-500">
-            ✨ Share something with your students
-          </div>
-        </div>
-
-        {/* Calendar Card */}
-        <div
-          onClick={() => setOpenCalendar(true)}
-          className="bg-white rounded-xl shadow p-4 flex gap-3 cursor-pointer hover:bg-gray-50"
-        >
-          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-xl">
-            📅
-          </div>
-          <div>
-            <p className="font-semibold">Schedule availability</p>
-            <p className="text-sm text-gray-500">Let students book sessions</p>
-          </div>
-        </div>
-
-        {/* Posts Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {posts.map((p, i) => (
-            <div
-              key={p._id}
-              onClick={() => setActivePostIndex(i)}
-              className="bg-white rounded-lg shadow overflow-hidden cursor-pointer"
-            >
-              <img src={p.mediaUrl} className="w-full h-40 object-cover" />
+            <div className="bg-white rounded-xl shadow p-4 flex gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                📅
+              </div>
+              <div>
+                <p className="font-semibold">Schedule availability</p>
+                <p className="text-sm text-gray-500">
+                  Let students book sessions
+                </p>
+              </div>
             </div>
-          ))}
+          </>
+        )}
+
+        {/* ================= POSTS GRID ================= */}
+        <div>
+          <h2 className="font-semibold mb-3">Posts</h2>
+          <div className="grid grid-cols-3 gap-[2px]">
+            {posts.map((post, i) => (
+              <div
+                key={post._id}
+                onClick={() => setActiveIndex(i)}
+                className="aspect-square bg-black cursor-pointer"
+              >
+                <img
+                  src={post.mediaUrl}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Post Modal*/}
-      {creatingPost && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl w-[90%] max-w-xl p-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-3 mb-3">
-              <img src={user?.profilePic} className="w-10 h-10 rounded-full" />
-              <p className="font-semibold">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <button
-                onClick={() => setCreatingPost(false)}
-                className="ml-auto text-xl"
-              >
-                ✕
-              </button>
-            </div>
+      {/* ================= FULLSCREEN POSTS ================= */}
+      {activeIndex !== null && (
+        <div className="fixed inset-0 z-50 bg-black/95">
+          <button
+            onClick={() => setActiveIndex(null)}
+            className="absolute top-4 right-4 text-white text-2xl"
+          >
+            ✕
+          </button>
 
-            <textarea
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Share something…"
-              className="w-full border rounded-lg p-3 mb-3"
-              rows={4}
-            />
-
-            <input
-              type="file"
-              id="fileUpload"
-              accept="image/*,video/*"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="hidden"
-            />
-
-            <label
-              htmlFor="fileUpload"
-              className="block text-center border rounded-lg py-2 cursor-pointer hover:bg-gray-100"
-            >
-              📎 Add photo / video
-            </label>
-
-            {file && (
-              <img
-                src={URL.createObjectURL(file)}
-                className="mt-3 rounded-lg max-h-60 mx-auto"
-              />
-            )}
-
-            <button
-              onClick={handleCreatePost}
-              disabled={uploading}
-              className="mt-4 w-full bg-emerald-600 text-white py-2 rounded-lg"
-            >
-              {uploading ? "Posting…" : "Post"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Calendar Modal */}
-      {openCalendar && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl w-[90%] max-w-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">
-              📅 Schedule Availability
-            </h2>
-
-            <div className="grid grid-cols-7 gap-3 text-center">
-              {Array.from({ length: 30 }).map((_, i) => {
-                const d = i + 1;
-                const active = selectedDates.includes(d);
-                return (
-                  <div
-                    key={d}
-                    onClick={() =>
-                      setSelectedDates((p) =>
-                        p.includes(d) ? p.filter((x) => x !== d) : [...p, d]
-                      )
-                    }
-                    className={`border rounded-lg py-3 cursor-pointer ${
-                      active
-                        ? "bg-emerald-500 text-white"
-                        : "hover:bg-emerald-50"
-                    }`}
-                  >
-                    {d}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setOpenCalendar(false)}
-              className="mt-4 w-full bg-emerald-600 text-white py-2 rounded-lg"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* insta post view */}
-      {activePostIndex !== null && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 overflow-y-auto"
-          onClick={() => setActivePostIndex(null)}
-        >
           <div
-            className="max-w-3xl mx-auto py-10 space-y-10"
-            onClick={(e) => e.stopPropagation()}
+            ref={feedRef}
+            className="h-full overflow-y-scroll snap-y snap-mandatory"
           >
             {posts.map((post) => (
-              <div key={post._id} className="bg-white rounded-xl shadow">
-                <div className="flex items-center gap-3 p-4 border-b relative">
+              <div
+                key={post._id}
+                className="snap-start flex justify-center py-10"
+              >
+                <div className="w-full max-w-md text-white">
+
+                  {/* HEADER + 3 DOT (ONLY OWNER OF THIS DASHBOARD) */}
+                  <div className="flex items-center px-3 py-2 relative">
+                    <img
+                      src={profile.profilePic}
+                      className="w-8 h-8 rounded-full mr-3"
+                    />
+                    <span className="font-semibold flex-1">
+                      {profile.firstName}
+                    </span>
+
+                    {view === "OWNER" && !id && (
+                      <>
+                        <button
+                          onClick={() =>
+                            setOpenMenuId(
+                              openMenuId === post._id ? null : post._id
+                            )
+                          }
+                          className="text-xl"
+                        >
+                          ⋮
+                        </button>
+
+                        {openMenuId === post._id && (
+                          <div className="absolute right-2 top-10 bg-white text-black rounded shadow w-28">
+                            <button className="block w-full px-3 py-2 hover:bg-gray-100">
+                              Edit
+                            </button>
+                            <button className="block w-full px-3 py-2 text-red-600 hover:bg-gray-100">
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
                   <img
-                    src={user?.profilePic}
-                    className="w-10 h-10 rounded-full"
+                    src={post.mediaUrl}
+                    onClick={() => setActiveIndex(null)}
+                    className="w-full max-h-[65vh] object-contain cursor-pointer"
                   />
-                  <div className="flex-1">
-                    <p className="font-semibold">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">Mentor</p>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setOpenMenuPostId(
-                        openMenuPostId === post._id ? null : post._id
-                      )
-                    }
-                    className="text-xl"
-                  >
-                    ⋮
-                  </button>
-
-                  {openMenuPostId === post._id && (
-                    <div className="absolute right-4 top-12 bg-white border rounded-lg shadow w-32">
-                      <button
-                        onClick={() => {
-                          setEditingPost(post);
-                          setEditCaption(post.caption || "");
-                          setOpenMenuPostId(null);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeletePost(post._id)}
-                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <img
-                  src={post.mediaUrl}
-                  className="w-full max-h-[75vh] object-contain bg-black"
-                />
-
-                {/* LIKE + COMMENT */}
-                <div className="p-4">
-                  <div className="flex gap-4 text-2xl mb-2">
-                    <button
-                      onClick={() =>
-                        setLikes((p) => ({
-                          ...p,
-                          [post._id]: !p[post._id],
-                        }))
-                      }
-                    >
-                      {likes[post._id] ? "❤️" : "🤍"}
-                    </button>
-                    💬
-                  </div>
 
                   {post.caption && (
-                    <p className="text-sm mb-2">
+                    <div className="px-3 py-3 text-sm">
                       <span className="font-semibold mr-1">
-                        {user?.firstName}
+                        {profile.firstName}
                       </span>
                       {post.caption}
-                    </p>
+                    </div>
                   )}
-
-                  {(comments[post._id] || []).map((c, i) => (
-                    <p key={i} className="text-sm text-gray-700">
-                      <span className="font-semibold mr-1">
-                        {user?.firstName}
-                      </span>
-                      {c}
-                    </p>
-                  ))}
                 </div>
               </div>
             ))}
@@ -361,21 +279,36 @@ export default function MentorDashboard() {
         </div>
       )}
 
-      {/* EDIT MODAL */}
-      {editingPost && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl w-[90%] max-w-md p-4">
-            <textarea
-              value={editCaption}
-              onChange={(e) => setEditCaption(e.target.value)}
-              className="w-full border rounded-lg p-3"
-              rows={4}
-            />
+      {/* ================= UPLOAD MODAL ================= */}
+      {showUpload && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-md rounded-xl p-6 relative">
             <button
-              onClick={handleEditPost}
-              className="mt-4 w-full bg-emerald-600 text-white py-2 rounded-lg"
+              onClick={() => setShowUpload(false)}
+              className="absolute top-3 right-3 text-xl"
             >
-              Save
+              ✕
+            </button>
+
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Write something..."
+              className="w-full border rounded-lg p-3 mb-4"
+            />
+
+            <input
+              type="file"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="mb-4"
+            />
+
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="w-full py-2 bg-emerald-600 text-white rounded-lg"
+            >
+              {uploading ? "Posting..." : "Post"}
             </button>
           </div>
         </div>
