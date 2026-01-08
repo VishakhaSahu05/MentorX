@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../utils/constant";
 import { useNavigate } from "react-router-dom";
+import MentorCalendar from "../components/MentorCalendar";
 
 export default function MentorDashboard() {
   const { id } = useParams();
@@ -19,6 +20,8 @@ export default function MentorDashboard() {
   const [uploading, setUploading] = useState(false);
 
   const [connectionStatus, setConnectionStatus] = useState("none");
+
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -204,19 +207,21 @@ export default function MentorDashboard() {
             </div>
 
             {/*  CALENDAR */}
-            <div className="bg-white rounded-xl shadow p-4 flex gap-3">
+            <div
+              onClick={() => setShowCalendar((prev) => !prev)}
+              className="bg-white rounded-xl shadow p-4 flex gap-3 cursor-pointer"
+            >
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                 📅
               </div>
               <div>
-                <p className="font-semibold">Schedule availability</p>
-                <p className="text-sm text-gray-500">
-                  Let students book sessions
-                </p>
+                <p className="font-semibold">My Calendar</p>
+                <p className="text-sm text-gray-500">Manage your schedule</p>
               </div>
             </div>
           </>
         )}
+        {isOwner && !id && showCalendar && <MentorCalendar />}
 
         {/* Post Grid */}
         <div>

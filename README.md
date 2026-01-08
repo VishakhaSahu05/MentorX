@@ -76,3 +76,7 @@ Remaining :
 
 - The mentor creates a post → media is uploaded to S3 → the URL is saved in MongoDB → the post appears in the student feed.
 
+# Calendar for Mentor
+- Build the personal Calendar for mentor 
+- Once the event gets over it should automatically get deleted from the DB also
+
