@@ -2,11 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../utils/constant";
+import { useNavigate } from "react-router-dom";
 
 export default function MentorDashboard() {
-  const { id } = useParams(); // undefined => own dashboard
+  const { id } = useParams();
   const feedRef = useRef(null);
-
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [posts, setPosts] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
@@ -17,23 +18,36 @@ export default function MentorDashboard() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const [connectionStatus, setConnectionStatus] = useState("CONNECT");
+  const [connectionStatus, setConnectionStatus] = useState("none");
 
-  /* ================= FETCH DASHBOARD ================= */
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const url = id
-          ? `${BASE_URL}/mentor/${id}`
-          : `${BASE_URL}/mentor`;
+        const url = id ? BASE_URL + "/mentor/" + id : BASE_URL + "/mentor";
 
-        const res = await axios.get(url, { withCredentials: true });
+        const res = await axios.get(url, {
+          withCredentials: true,
+        });
 
         setDashboard(res.data);
         setPosts(res.data.posts || []);
-        setConnectionStatus(res.data.connectionStatus || "CONNECT");
+
+        if (!id) {
+          setConnectionStatus("none");
+          return;
+        }
+
+        const statusRes = await axios.get(BASE_URL + "/request/status/" + id, {
+          withCredentials: true,
+        });
+
+        setConnectionStatus(statusRes.data.status || "none");
       } catch (err) {
-        console.error("Dashboard error", err);
+        if (err.response?.status === 401) {
+          setConnectionStatus("none");
+        } else {
+          console.log(err);
+        }
       }
     };
 
@@ -50,46 +64,67 @@ export default function MentorDashboard() {
     }
   }, [activeIndex]);
 
-  /* ================= CONNECT ================= */
+  /* Connect */
   const handleConnect = async () => {
     try {
       await axios.post(
-        `${BASE_URL}/request/send/${id}`,
+        BASE_URL + "/request/send/interested/" + id,
         {},
-        { withCredentials: true }
+        {
+          withCredentials: true,
+        }
       );
-      setConnectionStatus("REQUESTED");
+
+      setConnectionStatus("interested");
     } catch (err) {
-      console.error("Connect failed", err);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      } else {
+        console.error(err.response?.data || err.message);
+      }
     }
   };
 
-  /* ================= UPLOAD ================= */
+  /* Upload post */
   const handleUpload = async () => {
     if (!file) return alert("Select an image");
 
     try {
       setUploading(true);
+
       const fd = new FormData();
       fd.append("media", file);
       fd.append("caption", caption);
 
-      await axios.post(`${BASE_URL}/content/upload`, fd, {
+      const res = await axios.post(`${BASE_URL}/upload`, fd, {
         withCredentials: true,
       });
+
+      //ADD POST LOCALLY (NO EXTRA API CALL)
+      setPosts((prev) => [res.data, ...prev]);
 
       setShowUpload(false);
       setCaption("");
       setFile(null);
-
-      const res = await axios.get(`${BASE_URL}/mentor`, {
-        withCredentials: true,
-      });
-      setPosts(res.data.posts || []);
     } catch (err) {
       console.error("Upload failed", err);
     } finally {
       setUploading(false);
+    }
+  };
+
+  /* delete post */
+  const handleDeletePost = async (postId) => {
+    try {
+      await axios.delete(`${BASE_URL}/post/${postId}`, {
+        withCredentials: true,
+      });
+
+      setPosts((prev) => prev.filter((p) => p._id !== postId));
+      setOpenMenuId(null);
+      setActiveIndex(null);
+    } catch (err) {
+      console.error("Delete failed", err);
     }
   };
 
@@ -101,10 +136,9 @@ export default function MentorDashboard() {
   return (
     <div className="pt-20 bg-[#f3f2ef] min-h-screen">
       <div className="max-w-4xl mx-auto px-4 space-y-6">
-
-        {/* ================= PROFILE ================= */}
+        {/* profile */}
         <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-emerald-700 to-teal-600" />
+          <div className="h-32 bg-linear-to-r from-emerald-700 to-teal-600" />
           <div className="p-6 relative">
             <img
               src={profile.profilePic}
@@ -135,22 +169,25 @@ export default function MentorDashboard() {
               {!isOwner && (
                 <button
                   onClick={handleConnect}
-                  disabled={connectionStatus !== "CONNECT"}
+                  disabled={connectionStatus !== "none"}
                   className={`mt-4 px-6 py-2 rounded-full font-semibold
-                    ${
-                      connectionStatus === "CONNECT"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-300 text-gray-600"
-                    }`}
+      ${
+        connectionStatus === "none"
+          ? "bg-emerald-600 text-white"
+          : "bg-gray-300 text-gray-700"
+      }`}
                 >
-                  {connectionStatus}
+                  {connectionStatus === "none" && "CONNECT"}
+                  {connectionStatus === "interested" && "REQUEST SENT"}
+                  {connectionStatus === "accepted" && "CONNECTED"}
+                  {connectionStatus === "rejected" && "REJECTED"}
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* ================= OWNER ACTIONS ================= */}
+        {/* Owner Actions*/}
         {isOwner && !id && (
           <>
             <div
@@ -166,6 +203,7 @@ export default function MentorDashboard() {
               </div>
             </div>
 
+            {/*  CALENDAR */}
             <div className="bg-white rounded-xl shadow p-4 flex gap-3">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                 📅
@@ -180,7 +218,7 @@ export default function MentorDashboard() {
           </>
         )}
 
-        {/* ================= POSTS GRID ================= */}
+        {/* Post Grid */}
         <div>
           <h2 className="font-semibold mb-3">Posts</h2>
           <div className="grid grid-cols-3 gap-[2px]">
@@ -200,7 +238,7 @@ export default function MentorDashboard() {
         </div>
       </div>
 
-      {/* ================= FULLSCREEN POSTS ================= */}
+      {/* FULLSCREEN POSTS */}
       {activeIndex !== null && (
         <div className="fixed inset-0 z-50 bg-black/95">
           <button
@@ -220,8 +258,6 @@ export default function MentorDashboard() {
                 className="snap-start flex justify-center py-10"
               >
                 <div className="w-full max-w-md text-white">
-
-                  {/* HEADER + 3 DOT (ONLY OWNER OF THIS DASHBOARD) */}
                   <div className="flex items-center px-3 py-2 relative">
                     <img
                       src={profile.profilePic}
@@ -231,7 +267,7 @@ export default function MentorDashboard() {
                       {profile.firstName}
                     </span>
 
-                    {view === "OWNER" && !id && (
+                    {isOwner && !id && (
                       <>
                         <button
                           onClick={() =>
@@ -249,7 +285,10 @@ export default function MentorDashboard() {
                             <button className="block w-full px-3 py-2 hover:bg-gray-100">
                               Edit
                             </button>
-                            <button className="block w-full px-3 py-2 text-red-600 hover:bg-gray-100">
+                            <button
+                              onClick={() => handleDeletePost(post._id)}
+                              className="block w-full px-3 py-2 text-red-600 hover:bg-gray-100"
+                            >
                               Delete
                             </button>
                           </div>
@@ -260,8 +299,7 @@ export default function MentorDashboard() {
 
                   <img
                     src={post.mediaUrl}
-                    onClick={() => setActiveIndex(null)}
-                    className="w-full max-h-[65vh] object-contain cursor-pointer"
+                    className="w-full max-h-[65vh] object-contain"
                   />
 
                   {post.caption && (
