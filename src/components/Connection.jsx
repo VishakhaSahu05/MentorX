@@ -3,10 +3,15 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { BASE_URL } from "../utils/constant";
 import { addConnections } from "../utils/connectionSlice";
+import { Link } from "react-router-dom";
 
 const Connection = () => {
   const dispatch = useDispatch();
-  const connections = useSelector((store) => store.connection || []);
+
+  const connections = useSelector(
+    (store) => store.connection?.connections || []
+  );
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -16,7 +21,7 @@ const Connection = () => {
         withCredentials: true,
       });
 
-      dispatch(addConnections(res.data.connections || []));
+      dispatch(addConnections(res.data.connections || res.data || []));
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -45,53 +50,57 @@ const Connection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#eefaf5] to-white pt-32 px-6">
-      <h1 className="text-4xl font-bold mb-14 text-center text-[#0b1f1a]">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pt-28 px-4">
+      <h1 className="text-3xl font-bold mb-10 text-center text-gray-900">
         Your Connections
       </h1>
 
       {connections.length === 0 ? (
         <p className="text-center text-gray-500 text-lg">
-          No connections yet
+          You don’t have any connections yet
         </p>
       ) : (
         <div className="flex justify-center">
-          <div className="grid gap-10 sm:grid-cols-1 md:grid-cols-2 ml-100">
+          <div className="flex flex-col gap-4 w-full max-w-3xl">
 
             {connections.map((user) => (
               <div
                 key={user._id}
-                className="w-95 bg-white rounded-3xl shadow-lg hover:shadow-xl transition p-6"
+                className="group bg-white rounded-2xl border border-gray-100 
+                           shadow-sm hover:shadow-md transition-all duration-300
+                           p-5 flex items-center justify-between"
               >
-                {/* Profile section */}
+                {/* LEFT */}
                 <div className="flex items-center gap-4">
                   <img
                     src={user.profilePic || "/default-avatar.png"}
                     alt="profile"
-                    className="w-16 h-16 rounded-full object-cover border"
+                    className="w-12 h-12 rounded-full object-cover border"
                   />
 
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
+                    <h2 className="text-base font-semibold text-gray-800 
+                                   group-hover:text-emerald-600 transition">
                       {user.firstName} {user.lastName}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs text-gray-500">
                       {user.department || "Mentor"}
                     </p>
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="my-5 h-px bg-gray-200" />
-
-                {/* Chat button */}
-                <button
-                  className="w-full py-3 rounded-full bg-emerald-500 text-black font-semibold hover:bg-emerald-600 transition"
-                >
-                  💬 Chat
-                </button>
+                {/* RIGHT */}
+                <Link to={`/chat/${user._id}`}>
+                  <button
+                    className="px-6 py-2 rounded-full bg-emerald-500 text-black
+                               text-sm font-semibold hover:bg-emerald-600 transition"
+                  >
+                    💬 Chat
+                  </button>
+                </Link>
               </div>
             ))}
+
           </div>
         </div>
       )}

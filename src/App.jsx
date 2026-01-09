@@ -12,6 +12,7 @@ import MentorDashboard from "./components/MentorDashboard";
 import Profile from "./components/Profile";
 import Connection from "./components/Connection";
 import Requests from "./components/Requests";
+import Chat from "./components/Chat";
 
 
 const App = () => {
@@ -37,6 +38,7 @@ const App = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/connections" element={<Connection />} />
             <Route path = "/requests"  element = {<Requests/>}/>
+            <Route path = "/chat/:targetUserId"  element = {<Chat/>}/>
 
           </Route>
 
