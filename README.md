@@ -80,3 +80,17 @@ Remaining :
 - Build the personal Calendar for mentor 
 - Once the event gets over it should automatically get deleted from the DB also
 
+# Real Time Chat using Socket.io
+- built the Ui of the Chat window on /chat/:targetId
+- SetUp Socket.io in backend
+- npm i socket.io
+- Setup frontend socket.io-client
+- intialize the chat
+- createSocketConnection
+- Listen to events
+- Next - fix security Bug  -- auth in web socket
+- fix bug if not friend then messages cant be sent
+- Show green signal when online
+- Limit message when fetching from DB
+
+

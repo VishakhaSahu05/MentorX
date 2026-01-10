@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -11,19 +11,28 @@ import {
   Video,
   Info,
 } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import StudentProfile from "./StudentProfile";
 import { BASE_URL } from "../utils/constant";
+import { createSocketConnection } from "../utils/socket";
 
 const Chat = () => {
   const { targetUserId } = useParams();
   const navigate = useNavigate();
 
+  const user = useSelector((store) => store.user);
+  const userId = user?._id;
+
   const [targetUser, setTargetUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [textMessages, setTextMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [showStudentProfile, setShowStudentProfile] = useState(false);
 
-  // 🔥 FETCH TARGET USER
+  const socketRef = useRef(null);
+
+  // ================= FETCH TARGET USER =================
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -43,132 +52,227 @@ const Chat = () => {
     fetchUser();
   }, [targetUserId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading chat…
-      </div>
-    );
-  }
+  // ================= FETCH OLD CHAT =================
+  const fetchChatMessages = async () => {
+    try {
+      const chat = await axios.get(`${BASE_URL}/chat/${targetUserId}`, {
+        withCredentials: true,
+      });
 
-  if (!targetUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        User not found
-      </div>
-    );
-  }
+      const chatMessages = chat?.data?.messages?.map((msg) => ({
+        senderId: msg.senderId?._id, // ✅ FIX HERE
+        text: msg.text,
+      }));
 
+      setTextMessages(chatMessages || []);
+    } catch (err) {
+      console.log("chat fetch error", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!userId || !targetUser) return;
+    fetchChatMessages();
+  }, [userId, targetUser]);
+
+  // ================= SOCKET =================
+  useEffect(() => {
+    if (!userId || !targetUserId) return;
+
+    const socket = createSocketConnection();
+    socketRef.current = socket;
+
+    socket.emit("joinChat", {
+      firstName: user?.firstName,
+      userId,
+      targetUserId,
+    });
+
+    const handleMessage = ({ senderId, text }) => {
+      setTextMessages((prev) => [
+        ...prev,
+        { senderId: String(senderId), text },
+      ]);
+    };
+
+    socket.off("messageRecieved");
+    socket.on("messageRecieved", handleMessage);
+
+    return () => {
+      socket.off("messageRecieved", handleMessage);
+    };
+  }, [userId, targetUserId]);
+
+  // ================= SEND =================
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !socketRef.current) return;
+
+    socketRef.current.emit("setMessage", {
+      firstName: user.firstName,
+      userId,
+      targetUserId,
+      text: message,
+    });
+
     setMessage("");
   };
 
   return (
     <>
-      {/* ================= CHAT WRAPPER ================= */}
-      <div className="min-h-screen bg-[#f4f6f5] flex justify-center pt-28 pb-10">
-        <div className="w-full max-w-3xl h-[82vh] bg-black rounded-3xl shadow-2xl flex flex-col">
+      {loading && (
+        <div className="min-h-screen flex items-center justify-center">
+          Loading chat…
+        </div>
+      )}
 
-          {/* ================= HEADER ================= */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <ArrowLeft
-                size={20}
-                className="text-white cursor-pointer"
-                onClick={() => navigate(-1)}
-              />
+      {!loading && !targetUser && (
+        <div className="min-h-screen flex items-center justify-center">
+          User not found
+        </div>
+      )}
 
-              <img
-                src={targetUser.profilePic}
-                alt="profile"
-                className="w-10 h-10 rounded-full object-cover"
-              />
+      {!loading && targetUser && (
+        <>
+          <div className="min-h-screen bg-[#f4f6f5] flex justify-center pt-28 pb-10">
+            <div className="w-full max-w-3xl h-[82vh] bg-black rounded-3xl shadow-2xl flex flex-col">
+              {/* HEADER */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <ArrowLeft
+                    size={20}
+                    className="text-white cursor-pointer"
+                    onClick={() => navigate(-1)}
+                  />
 
-              <div>
-                <p className="text-white font-semibold">
-                  {targetUser.firstName} {targetUser.lastName}
-                </p>
-                <p className="text-xs text-emerald-400">
-                  {targetUser.role}
-                </p>
+                  <img
+                    src={targetUser.profilePic}
+                    alt="profile"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+
+                  <div>
+                    <p className="text-white font-semibold">
+                      {targetUser.firstName} {targetUser.lastName}
+                    </p>
+                    <p className="text-xs text-emerald-400">
+                      {targetUser.role}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-white">
+                  <Phone size={20} />
+                  <Video size={20} />
+                  <Info size={20} />
+                </div>
+              </div>
+
+              {/* BODY */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="text-center">
+                  <img
+                    src={targetUser.profilePic}
+                    className="w-24 h-24 rounded-full mx-auto mb-4"
+                    alt="profile"
+                  />
+
+                  <p className="text-white text-lg font-semibold">
+                    {targetUser.firstName} {targetUser.lastName}
+                  </p>
+
+                  <p className="text-sm text-gray-400 mt-1">
+                    You’re now connected on MentorX
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      if (targetUser.role === "mentor") {
+                        navigate(`/mentor/${targetUserId}`);
+                      } else {
+                        setShowStudentProfile(true);
+                      }
+                    }}
+                    className="mt-4 px-6 py-2 rounded-full bg-[#262626] text-white text-sm hover:bg-[#333]"
+                  >
+                    View Profile
+                  </button>
+                </div>
+
+                {/* CHAT MESSAGES */}
+                <div className="mt-8 flex flex-col gap-2">
+                  {textMessages.map((msg, i) => {
+                    const isMe = String(msg.senderId) === String(userId);
+
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-end gap-2 ${
+                          isMe ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        {!isMe && (
+                          <img
+                            src={targetUser.profilePic}
+                            className="w-7 h-7 rounded-full object-cover"
+                            alt=""
+                          />
+                        )}
+
+                        <div
+                          className={`
+                            px-4 py-2 rounded-2xl max-w-[75%] text-sm leading-relaxed
+                            ${
+                              isMe
+                                ? "bg-purple-600 text-white rounded-br-md"
+                                : "bg-[#2f2f2f] text-white rounded-bl-md"
+                            }
+                          `}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* INPUT */}
+              <div className="px-4 py-3 border-t border-white/10 flex items-center gap-3">
+                <Camera size={20} className="text-white" />
+
+                <input
+                  type="text"
+                  placeholder="Message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  className="flex-1 bg-[#1c1c1c] text-white rounded-full px-4 py-2 outline-none"
+                />
+
+                {message.trim() ? (
+                  <button
+                    onClick={handleSend}
+                    className="bg-[#6d28d9] p-2 rounded-full"
+                  >
+                    <ArrowUp size={18} className="text-white" />
+                  </button>
+                ) : (
+                  <>
+                    <Mic size={20} className="text-white" />
+                    <Plus size={20} className="text-white" />
+                  </>
+                )}
               </div>
             </div>
-
-            <div className="flex items-center gap-4 text-white">
-              <Phone size={20} />
-              <Video size={20} />
-              <Info size={20} />
-            </div>
           </div>
 
-          {/* ================= BODY ================= */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 text-center">
-            <img
-              src={targetUser.profilePic}
-              className="w-24 h-24 rounded-full mx-auto mb-4"
-              alt="profile"
+          {showStudentProfile && targetUser.role === "student" && (
+            <StudentProfile
+              student={targetUser}
+              onClose={() => setShowStudentProfile(false)}
             />
-
-            <p className="text-white text-lg font-semibold">
-              {targetUser.firstName} {targetUser.lastName}
-            </p>
-
-            <p className="text-sm text-gray-400 mt-1">
-              You’re now connected on MentorX
-            </p>
-
-            {/* VIEW PROFILE BUTTON */}
-            <button
-              onClick={() => {
-                if (targetUser.role === "mentor") {
-                  navigate(`/mentor/${targetUserId}`);
-                } else {
-                  setShowStudentProfile(true);
-                }
-              }}
-              className="mt-4 px-6 py-2 rounded-full bg-[#262626] text-white text-sm hover:bg-[#333]"
-            >
-              View Profile
-            </button>
-          </div>
-
-          {/* ================= INPUT ================= */}
-          <div className="px-4 py-3 border-t border-white/10 flex items-center gap-3">
-            <Camera size={20} className="text-white" />
-
-            <input
-              type="text"
-              placeholder="Message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              className="flex-1 bg-[#1c1c1c] text-white rounded-full px-4 py-2 outline-none"
-            />
-
-            {message.trim() ? (
-              <button
-                onClick={handleSend}
-                className="bg-[#6d28d9] p-2 rounded-full"
-              >
-                <ArrowUp size={18} className="text-white" />
-              </button>
-            ) : (
-              <>
-                <Mic size={20} className="text-white" />
-                <Plus size={20} className="text-white" />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ================= STUDENT PROFILE MODAL ================= */}
-      {showStudentProfile && targetUser.role === "student" && (
-        <StudentProfile
-          student={targetUser}
-          onClose={() => setShowStudentProfile(false)}
-        />
+          )}
+        </>
       )}
     </>
   );
