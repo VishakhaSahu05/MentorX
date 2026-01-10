@@ -1,128 +1,176 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import axios from "axios";
 import {
   ArrowLeft,
-  Phone,
-  Video,
-  Info,
   Camera,
   Mic,
   Plus,
+  ArrowUp,
+  Phone,
+  Video,
+  Info,
 } from "lucide-react";
+import StudentProfile from "./StudentProfile";
+import { BASE_URL } from "../utils/constant";
 
 const Chat = () => {
   const { targetUserId } = useParams();
   const navigate = useNavigate();
 
-  // Logged-in user (future use)
-  const loggedInUser = useSelector((store) => store.user);
+  const [targetUser, setTargetUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [showStudentProfile, setShowStudentProfile] = useState(false);
 
-  // Connections from redux
-  const connections = useSelector(
-    (store) => store.connection?.connections || []
-  );
+  // 🔥 FETCH TARGET USER
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(
+          `${BASE_URL}/user/profile/${targetUserId}`,
+          { withCredentials: true }
+        );
+        setTargetUser(res.data.user);
+      } catch (err) {
+        console.error("Fetch user error:", err);
+        setTargetUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Find chat user ONLY after connections load
-  const targetUser = connections.length
-    ? connections.find((u) => u._id === targetUserId)
-    : null;
+    fetchUser();
+  }, [targetUserId]);
 
-  // Wait till connections load
-  if (!connections.length) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading chat...</p>
+        Loading chat…
       </div>
     );
   }
 
-  // Not a connection
   if (!targetUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">
-          You can only chat with your connections
-        </p>
+        User not found
       </div>
     );
   }
 
+  const handleSend = () => {
+    if (!message.trim()) return;
+    setMessage("");
+  };
+
   return (
-    <div className="min-h-screen bg-[#f4f6f5] flex justify-center pt-28 pb-10">
-      {/* CHAT BOX */}
-      <div className="w-full max-w-3xl h-[82vh] bg-black rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+    <>
+      {/* ================= CHAT WRAPPER ================= */}
+      <div className="min-h-screen bg-[#f4f6f5] flex justify-center pt-28 pb-10">
+        <div className="w-full max-w-3xl h-[82vh] bg-black rounded-3xl shadow-2xl flex flex-col">
 
-        {/* ================= HEADER ================= */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <ArrowLeft
-              size={20}
-              className="text-white cursor-pointer"
-              onClick={() => navigate(-1)}
-            />
+          {/* ================= HEADER ================= */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <ArrowLeft
+                size={20}
+                className="text-white cursor-pointer"
+                onClick={() => navigate(-1)}
+              />
 
-            <img
-              src={targetUser.profilePic}
-              alt="profile"
-              className="w-10 h-10 rounded-full object-cover"
-            />
+              <img
+                src={targetUser.profilePic}
+                alt="profile"
+                className="w-10 h-10 rounded-full object-cover"
+              />
 
-            <div>
-              <p className="text-white font-semibold">
-                {targetUser.firstName} {targetUser.lastName}
-              </p>
-              <p className="text-xs text-emerald-400">online</p>
+              <div>
+                <p className="text-white font-semibold">
+                  {targetUser.firstName} {targetUser.lastName}
+                </p>
+                <p className="text-xs text-emerald-400">
+                  {targetUser.role}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 text-white">
+              <Phone size={20} />
+              <Video size={20} />
+              <Info size={20} />
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-white">
-            <Phone size={20} className="cursor-pointer" />
-            <Video size={20} className="cursor-pointer" />
-            <Info size={20} className="cursor-pointer" />
+          {/* ================= BODY ================= */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 text-center">
+            <img
+              src={targetUser.profilePic}
+              className="w-24 h-24 rounded-full mx-auto mb-4"
+              alt="profile"
+            />
+
+            <p className="text-white text-lg font-semibold">
+              {targetUser.firstName} {targetUser.lastName}
+            </p>
+
+            <p className="text-sm text-gray-400 mt-1">
+              You’re now connected on MentorX
+            </p>
+
+            {/* VIEW PROFILE BUTTON */}
+            <button
+              onClick={() => {
+                if (targetUser.role === "mentor") {
+                  navigate(`/mentor/${targetUserId}`);
+                } else {
+                  setShowStudentProfile(true);
+                }
+              }}
+              className="mt-4 px-6 py-2 rounded-full bg-[#262626] text-white text-sm hover:bg-[#333]"
+            >
+              View Profile
+            </button>
+          </div>
+
+          {/* ================= INPUT ================= */}
+          <div className="px-4 py-3 border-t border-white/10 flex items-center gap-3">
+            <Camera size={20} className="text-white" />
+
+            <input
+              type="text"
+              placeholder="Message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              className="flex-1 bg-[#1c1c1c] text-white rounded-full px-4 py-2 outline-none"
+            />
+
+            {message.trim() ? (
+              <button
+                onClick={handleSend}
+                className="bg-[#6d28d9] p-2 rounded-full"
+              >
+                <ArrowUp size={18} className="text-white" />
+              </button>
+            ) : (
+              <>
+                <Mic size={20} className="text-white" />
+                <Plus size={20} className="text-white" />
+              </>
+            )}
           </div>
         </div>
-
-        {/* ================= BODY ================= */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-          <img
-            src={targetUser.profilePic}
-            className="w-28 h-28 rounded-full object-cover mb-4"
-          />
-
-          <p className="text-white text-lg font-semibold">
-            {targetUser.firstName} {targetUser.lastName}
-          </p>
-
-          <p className="text-sm text-gray-400 mt-1">
-            You’re now connected on MentorX
-          </p>
-
-          <button
-            onClick={() => navigate(`/mentor/${targetUserId}`)}
-            className="mt-4 px-6 py-2 rounded-full bg-[#262626] text-white text-sm hover:bg-[#333] transition"
-          >
-            View Profile
-          </button>
-
-          <p className="mt-6 text-sm text-gray-500">Say hi 👋</p>
-        </div>
-
-        {/* ================= INPUT ================= */}
-        <div className="px-4 py-3 border-t border-white/10 flex items-center gap-3">
-          <Camera size={20} className="text-white cursor-pointer" />
-
-          <input
-            type="text"
-            placeholder="Message..."
-            className="flex-1 bg-[#1c1c1c] text-white rounded-full px-4 py-2 outline-none placeholder-gray-500"
-          />
-
-          <Mic size={20} className="text-white cursor-pointer" />
-          <Plus size={20} className="text-white cursor-pointer" />
-        </div>
       </div>
-    </div>
+
+      {/* ================= STUDENT PROFILE MODAL ================= */}
+      {showStudentProfile && targetUser.role === "student" && (
+        <StudentProfile
+          student={targetUser}
+          onClose={() => setShowStudentProfile(false)}
+        />
+      )}
+    </>
   );
 };
 
