@@ -60,7 +60,7 @@ const Chat = () => {
       });
 
       const chatMessages = chat?.data?.messages?.map((msg) => ({
-        senderId: msg.senderId?._id, // ✅ FIX HERE
+        senderId: msg.senderId?._id, 
         text: msg.text,
       }));
 

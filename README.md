@@ -94,3 +94,9 @@ Remaining :
 - Limit message when fetching from DB
 
 
+# How Voice Messages Work in Chat
+- Frontend (Browser) – Record audio
+- Frontend – Upload audio
+- Backend – Store audio
+- Chat System – Send & play audio
+
