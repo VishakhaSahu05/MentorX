@@ -298,6 +298,7 @@ export default function MentorDashboard() {
                         <img
                           src={post.mediaUrl}
                           className="max-h-[520px] w-full object-contain"
+                          
                         />
                       )}
                     </div>
