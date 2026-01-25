@@ -62,7 +62,7 @@ export default function MentorDashboard() {
       await axios.post(
         `${BASE_URL}/request/send/interested/${id}`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       setConnectionStatus("interested");
     } catch (err) {
@@ -115,13 +115,13 @@ export default function MentorDashboard() {
       await axios.put(
         `${BASE_URL}/post/${editingPost._id}`,
         { caption: editCaption },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setPosts((prev) =>
         prev.map((p) =>
-          p._id === editingPost._id ? { ...p, caption: editCaption } : p
-        )
+          p._id === editingPost._id ? { ...p, caption: editCaption } : p,
+        ),
       );
 
       setEditingPost(null);
@@ -159,11 +159,23 @@ export default function MentorDashboard() {
 
               {!isOwner && (
                 <button
-                  onClick={handleConnect}
-                  disabled={connectionStatus !== "none"}
-                  className="mt-4 px-6 py-2 rounded-full bg-emerald-600 text-white"
+                  onClick={
+                    connectionStatus === "none" ? handleConnect : undefined
+                  }
+                  disabled={connectionStatus === "accepted"}
+                  className={`mt-4 px-6 py-2 rounded-full text-white ${
+                    connectionStatus === "accepted"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : connectionStatus === "interested"
+                        ? "bg-yellow-500"
+                        : "bg-emerald-600"
+                  }`}
                 >
-                  CONNECT
+                  {connectionStatus === "accepted"
+                    ? "CONNECTED"
+                    : connectionStatus === "interested"
+                      ? "REQUEST SENT"
+                      : "CONNECT"}
                 </button>
               )}
             </div>
@@ -250,7 +262,7 @@ export default function MentorDashboard() {
                           <button
                             onClick={() =>
                               setOpenMenuId(
-                                openMenuId === post._id ? null : post._id
+                                openMenuId === post._id ? null : post._id,
                               )
                             }
                           >
@@ -298,7 +310,6 @@ export default function MentorDashboard() {
                         <img
                           src={post.mediaUrl}
                           className="max-h-[520px] w-full object-contain"
-                          
                         />
                       )}
                     </div>

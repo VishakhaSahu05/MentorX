@@ -95,8 +95,12 @@ Remaining :
 
 
 # How Voice Messages Work in Chat
-- Frontend (Browser) – Record audio
-- Frontend – Upload audio
-- Backend – Store audio
-- Chat System – Send & play audio
-
+- Enables users to record and send voice messages within the platform
+- Uses the browser MediaRecorder API for audio capture on the frontend
+- Supports common audio formats like webm for efficient recording
+- Voice files are sent to the backend using multipart/form-data
+- Backend handles uploads with Multer and stores files on AWS S3
+- Audio URLs and metadata are saved in the database
+- Voice messages are rendered using the native HTML <audio> player
+- Includes proper microphone permission handling and error states
+- Designed for smooth, real-time communication between users
