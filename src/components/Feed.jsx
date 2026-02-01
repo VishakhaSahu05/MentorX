@@ -2,148 +2,183 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { BASE_URL } from "../utils/constant";
 import { useDispatch, useSelector } from "react-redux";
-import { addFeed } from "../utils/feedSlice";
- import { removeUserFromFeed } from "../utils/feedSlice";
+import { addFeed, appendFeed, resetFeed } from "../utils/feedSlice";
+import { useNavigate } from "react-router-dom";
+import LeftSidebar from "../components/LeftSideBar";
 
 const Feed = () => {
-  const feed = useSelector((store) => store.feed); // null | array
-  const dispatch = useDispatch();
-  const [sendingId, setSendingId] = useState(null);
+  const feed = useSelector((store) => store.feed);
+  const user = useSelector((store) => store.user);
 
-  // Fetch mentors feed
-  const getFeed = async () => {
-    if (feed !== null) return;
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchFeed = async (pageNumber) => {
+    if (loading || !hasMore) return;
 
     try {
+      setLoading(true);
+
       const res = await axios.get(
-        BASE_URL + "/feed",
+        `${BASE_URL}/feed?page=${pageNumber}`,
         { withCredentials: true }
       );
-      dispatch(addFeed(res.data.mentors || []));
+
+      const posts = res.data.posts || [];
+
+      if (pageNumber === 1) {
+        dispatch(addFeed(posts));
+      } else {
+        dispatch(appendFeed(posts));
+      }
+
+      if (posts.length < 10) setHasMore(false);
     } catch (err) {
       console.error("Failed to load feed", err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  /* INITIAL LOAD */
   useEffect(() => {
-    getFeed();
+    dispatch(resetFeed());
+    fetchFeed(1);
   }, []);
 
-// SEND CONNECTION REQUEST (STUDENT → MENTOR)
-const handleSendRequest = async (mentorId) => {
-  try {
-    setSendingId(mentorId);
+  /* INFINITE SCROLL */
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight +
+          document.documentElement.scrollTop +
+          200 >=
+        document.documentElement.scrollHeight
+      ) {
+        setPage((prev) => prev + 1);
+      }
+    };
 
-    await axios.post(
-      `${BASE_URL}/request/send/interested/${mentorId}`,
-      {},
-      { withCredentials: true }
-    );
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    // UI se mentor hata do
-    dispatch(removeUserFromFeed(mentorId));
-
-  } catch (err) {
-    console.error(
-      "Send request failed:",
-      err.response?.data || err.message
-    );
-    alert(err.response?.data?.message || "Failed to send request!");
-  } finally {
-    setSendingId(null);
-  }
-};
+  useEffect(() => {
+    if (page > 1) fetchFeed(page);
+  }, [page]);
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-6">
-      <h1 className="text-3xl font-semibold mb-8 text-[#0b1f1a]">
-        Your Feed
-      </h1>
+    <div className="min-h-screen bg-[#eefaf5] py-10">
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6">
 
-      {/* Loading */}
-      {feed === null && (
-        <p className="text-gray-500">Loading mentors...</p>
-      )}
+        {/* LEFT SIDEBAR – ONLY FOR STUDENT */}
+        {user?.role === "student" && (
+          <div className="hidden md:block md:col-span-1">
+            <LeftSidebar />
+          </div>
+        )}
 
-      {/* Empty */}
-      {Array.isArray(feed) && feed.length === 0 && (
-        <p className="text-gray-500">
-          No mentors available right now
-        </p>
-      )}
+        {/* FEED */}
+        <div
+          className={
+            user?.role === "student"
+              ? "md:col-span-3"
+              : "md:col-span-4"
+          }
+        >
+          <h1 className="text-3xl font-semibold mb-10 text-[#0b1f1a]">
+            Feed
+          </h1>
 
-      {/* Mentor Cards */}
-      {Array.isArray(feed) &&
-        feed.map((mentor) => (
-          <div
-            key={mentor._id}
-            className="mb-10 bg-white rounded-2xl shadow-lg p-8"
-          >
-            {/* Top */}
-            <div className="flex items-center gap-6">
-              <img
-                src={mentor.profilePic || "/default-avatar.png"}
-                alt="mentor"
-                className="w-24 h-24 rounded-full object-cover border-2 border-emerald-500"
-              />
+          {feed.length === 0 && !loading && (
+            <p className="text-center text-gray-500">
+              No posts available right now
+            </p>
+          )}
 
-              <div>
-                <h2 className="text-2xl font-semibold text-[#0b1f1a]">
-                  {mentor.firstName} {mentor.lastName}
-                </h2>
+          {feed.map((post) => {
+            const isVideo = post.mediaType === "video";
 
-                <span className="inline-block mt-2 px-3 py-1 text-sm rounded-full bg-emerald-100 text-emerald-700">
-                  {mentor.department}
-                </span>
+            return (
+              <div
+                key={post._id}
+                className="mb-12 bg-white rounded-2xl shadow-lg overflow-hidden"
+              >
+                {/* HEADER */}
+                <div
+                  className="flex items-center gap-3 px-6 py-4 cursor-pointer"
+                  onClick={() =>
+                    navigate(`/mentor/${post.mentor._id}`)
+                  }
+                >
+                  <img
+                    src={
+                      post.mentor?.profilePic ||
+                      "/default-avatar.png"
+                    }
+                    alt="mentor"
+                    className="w-11 h-11 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-semibold text-[#0b1f1a] leading-none">
+                      {post.mentor?.firstName}{" "}
+                      {post.mentor?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Mentor
+                    </p>
+                  </div>
+                </div>
 
-                <p className="text-sm text-gray-500 mt-2">
-                  {mentor.emailId}
-                </p>
-              </div>
-            </div>
+                {/* MEDIA */}
+                <div className="w-full aspect-[4/3] bg-black">
+                  {isVideo ? (
+                    <video
+                      src={post.mediaUrl}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={post.mediaUrl}
+                      alt="post"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
 
-            {/* Skills */}
-            <div className="mt-6">
-              <h3 className="font-medium text-gray-800 mb-2">
-                Skills
-              </h3>
-
-              <div className="flex flex-wrap gap-2">
-                {mentor.skills?.length > 0 ? (
-                  mentor.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-gray-500 text-sm">
-                    No skills listed
-                  </span>
+                {/* CAPTION */}
+                {post.caption && (
+                  <div className="px-6 py-4">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {post.caption}
+                    </p>
+                  </div>
                 )}
               </div>
-            </div>
+            );
+          })}
 
-            {/* Actions */}
-            <div className="mt-8 flex gap-4">
-              <button className="flex-1 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold">
-                View Profile
-              </button>
+          {loading && (
+            <p className="text-center text-gray-500">
+              Loading...
+            </p>
+          )}
 
-              <button
-                onClick={() => handleSendRequest(mentor._id)}
-                disabled={sendingId === mentor._id}
-                className="flex-1 py-3 rounded-full border border-emerald-500 text-emerald-600 font-semibold hover:bg-emerald-50 disabled:opacity-50"
-              >
-                {sendingId === mentor._id
-                  ? "Sending..."
-                  : "Connect"}
-              </button>
-            </div>
-          </div>
-        ))}
+          {!hasMore && feed.length > 0 && (
+            <p className="text-center text-gray-400 mt-6">
+              You have reached the end
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

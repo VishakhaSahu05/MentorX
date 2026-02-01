@@ -41,18 +41,32 @@ export const mentorsByDepartment = {
       company: "Swiggy",
       experience: "6+ years",
     },
+    {
+      id: 6,
+      name: "Pooja Verma",
+      role: "ML Engineer",
+      company: "OpenAI",
+      experience: "5+ years",
+    },
   ],
 
   AI: [
     {
-      id: 6,
+      id: 7,
       name: "Ankit Jain",
       role: "Data Scientist",
       company: "Microsoft",
       experience: "6+ years",
     },
     {
-      id: 7,
+      id: 8,
+      name: "Pooja Mishra",
+      role: "ML Engineer",
+      company: "OpenAI",
+      experience: "5+ years",
+    },
+    {
+      id: 9,
       name: "Pooja Singh",
       role: "ML Engineer",
       company: "OpenAI",
@@ -62,17 +76,24 @@ export const mentorsByDepartment = {
 
   Startup: [
     {
-      id: 8,
+      id: 10,
       name: "Rahul Khanna",
       role: "Startup Mentor",
       company: "Y Combinator Alum",
       experience: "10+ years",
     },
     {
-      id: 9,
+      id: 11,
       name: "Sneha Gupta",
       role: "Growth Mentor",
       company: "Zerodha",
+      experience: "9+ years",
+    },
+    {
+      id: 12,
+      name: "Suman Gupta",
+      role: "Growth Mentor",
+      company: "Zplus",
       experience: "9+ years",
     },
   ],

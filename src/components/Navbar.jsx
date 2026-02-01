@@ -36,6 +36,10 @@ const Navbar = () => {
     }
   };
 
+  const handleDashboard = () => {
+    navigate("/mentor/dashboard");
+  };
+
   return (
     <header className="fixed top-0 left-0 w-full z-50 border-b border-white/10 bg-[#0b1f1a]/90 backdrop-blur">
       <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between text-white">
@@ -134,13 +138,31 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* 🔥 BROWSE MENTORS (ONLY student / logged-out) */}
-          {(!user || user.role === "student") && (
+          {/* 🔥 MAIN CTA BUTTON */}
+          {!user && (
             <button
               onClick={handleBrowseMentors}
               className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
             >
               Browse mentors
+            </button>
+          )}
+
+          {user && user.role === "student" && (
+            <button
+              onClick={handleBrowseMentors}
+              className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
+            >
+              Browse mentors
+            </button>
+          )}
+
+          {user && user.role === "mentor" && (
+            <button
+              onClick={handleDashboard}
+              className="px-6 py-3 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold shadow-lg shadow-emerald-500/30"
+            >
+              Dashboard
             </button>
           )}
 

@@ -1,149 +1,403 @@
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../utils/constant";
-import { addConnections } from "../utils/connectionSlice";
+import MentorCalendar from "../components/MentorCalendar";
 
 export default function MentorDashboard() {
-  const dispatch = useDispatch();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  // Redux data
-  const user = useSelector((store) => store.user);
-  const connections = useSelector((store) => store.connection || []);
+  const [dashboard, setDashboard] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(null);
 
-  const [openCalendar, setOpenCalendar] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  //Fetch accepted connections (backend already filters)
+  const [connectionStatus, setConnectionStatus] = useState("none");
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingPost, setEditingPost] = useState(null);
+  const [editCaption, setEditCaption] = useState("");
+
+  /* FETCH DASHBOARD */
   useEffect(() => {
-    const fetchConnections = async () => {
+    const fetchDashboard = async () => {
       try {
-        const res = await axios.get(
-          BASE_URL + "/user/connection",
-          { withCredentials: true }
-        );
+        const url = id ? `${BASE_URL}/mentor/${id}` : `${BASE_URL}/mentor`;
+        const res = await axios.get(url, { withCredentials: true });
 
-        dispatch(addConnections(res.data.connections || []));
+        setDashboard(res.data);
+        setPosts(res.data.posts || []);
+
+        if (!id) return;
+
+        const statusRes = await axios.get(`${BASE_URL}/request/status/${id}`, {
+          withCredentials: true,
+        });
+
+        setConnectionStatus(statusRes.data.status || "none");
       } catch (err) {
-        console.error("Error fetching connections", err);
+        console.error(err);
       }
     };
 
-    fetchConnections();
-  }, [dispatch]);
+    fetchDashboard();
+  }, [id]);
 
-  // Followers = accepted connections count
-  const followersCount = connections.length;
+  useEffect(() => {
+    console.log("POSTS:", posts);
+    posts.forEach((p) => {
+      console.log("MEDIA URL:", p.mediaUrl, "TYPE:", p.mediaType);
+    });
+  }, [posts]);
+
+  /* CONNECT */
+  const handleConnect = async () => {
+    try {
+      await axios.post(
+        `${BASE_URL}/request/send/interested/${id}`,
+        {},
+        { withCredentials: true },
+      );
+      setConnectionStatus("interested");
+    } catch (err) {
+      if (err.response?.status === 401) navigate("/login");
+    }
+  };
+
+  /* UPLOAD */
+  const handleUpload = async () => {
+    if (!file) return alert("Select image or video");
+
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("media", file);
+      fd.append("caption", caption);
+
+      const res = await axios.post(`${BASE_URL}/upload`, fd, {
+        withCredentials: true,
+      });
+
+      setPosts((prev) => [res.data, ...prev]);
+      setShowUpload(false);
+      setCaption("");
+      setFile(null);
+    } catch {
+      alert("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /* DELETE */
+  const handleDeletePost = async (postId) => {
+    try {
+      await axios.delete(`${BASE_URL}/post/${postId}`, {
+        withCredentials: true,
+      });
+
+      setPosts((prev) => prev.filter((p) => p._id !== postId));
+      setActiveIndex(null);
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  /* SAVE EDIT */
+  const handleSaveEdit = async () => {
+    try {
+      await axios.put(
+        `${BASE_URL}/post/${editingPost._id}`,
+        { caption: editCaption },
+        { withCredentials: true },
+      );
+
+      setPosts((prev) =>
+        prev.map((p) =>
+          p._id === editingPost._id ? { ...p, caption: editCaption } : p,
+        ),
+      );
+
+      setEditingPost(null);
+    } catch {
+      alert("Edit failed");
+    }
+  };
+
+  if (!dashboard) return null;
+
+  const { profile, stats, view } = dashboard;
+  const isOwner = view === "OWNER";
 
   return (
-    <div className="min-h-screen bg-[#eefaf5] flex justify-center pt-24 pb-10">
-      <div className="bg-white w-[90%] rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-10">
+    <div className="pt-20 bg-[#f3f2ef] min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 space-y-6">
+        {/* PROFILE */}
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="h-32 bg-linear-to-r from-emerald-700 to-teal-600" />
+          <div className="p-6 relative">
+            <img
+              src={profile.profilePic}
+              className="w-28 h-28 rounded-full border-4 border-white absolute -top-14"
+            />
+            <div className="mt-16">
+              <h1 className="text-2xl font-bold">
+                {profile.firstName} {profile.lastName}
+              </h1>
+              <p className="text-gray-600">Mentor</p>
 
-        {/* ===== HEADER ===== */}
-        <div className="flex items-center gap-4 mb-10">
-          <img
-            src={user?.profilePic || "/default-avatar.png"}
-            alt="mentor"
-            className="w-16 h-16 rounded-full ring-2 ring-[#0f2f26]/20 shadow"
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-[#0f2f26]">
-              {user?.firstName} {user?.lastName}
-            </h1>
-            <p className="text-sm text-gray-500">Mentor Dashboard</p>
-          </div>
-        </div>
-
-        {/* ===== STATS ===== */}
-        <div className="grid grid-cols-2 gap-6 mb-10">
-
-          {/* Followers */}
-          <div className="bg-[#f4fbf8] border border-[#dfeee8] rounded-2xl p-6 shadow-sm">
-            <p className="text-gray-600 text-sm">Followers</p>
-            <p className="text-4xl font-extrabold text-[#0f2f26] mt-2">
-              {followersCount}
-            </p>
-          </div>
-
-          {/* Rating */}
-          <div className="bg-[#f4fbf8] border border-[#dfeee8] rounded-2xl p-6 shadow-sm">
-            <p className="text-gray-600 text-sm">Rating</p>
-            <p className="text-4xl font-extrabold text-[#0f2f26] mt-2 flex items-center gap-2">
-              4.6 <span className="text-yellow-400 text-3xl">★</span>
-            </p>
-          </div>
-
-        </div>
-
-        {/* ===== CALENDAR ===== */}
-        <div className="bg-[#f4fbf8] border border-[#dfeee8] rounded-2xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-5">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-[#0f2f26]">
-              <span className="bg-[#e7f5ef] p-2 rounded-lg">📅</span>
-              Calendar
-            </h2>
-
-            <button
-              onClick={() => setOpenCalendar(true)}
-              className="text-sm text-[#0f2f26]/70 hover:text-[#0f2f26]"
-            >
-              View full →
-            </button>
-          </div>
-
-          {/* Mini calendar */}
-          <div className="grid grid-cols-7 gap-3 text-center text-sm">
-            {["S","M","T","W","T","F","S"].map((d) => (
-              <div key={d} className="text-gray-600 font-medium">
-                {d}
+              <div className="flex gap-6 mt-2 text-sm text-gray-600">
+                <span>{stats.followersCount} Followers</span>
+                <span>⭐ {stats.rating}</span>
               </div>
-            ))}
 
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white border border-[#e3f1ec] rounded-xl py-3 hover:bg-[#eefaf5]"
-              >
-                {i + 1}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ===== FULL CALENDAR MODAL ===== */}
-      {openCalendar && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-[90%] h-[90%] rounded-3xl p-8 relative overflow-auto">
-            <button
-              onClick={() => setOpenCalendar(false)}
-              className="absolute top-4 right-4 text-2xl"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-xl font-semibold mb-6 text-[#0f2f26]">
-              📅 December 2025
-            </h2>
-
-            <div className="grid grid-cols-7 gap-4 text-center">
-              {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-                <div key={d} className="font-medium text-gray-600">
-                  {d}
-                </div>
-              ))}
-
-              {Array.from({ length: 31 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white border border-[#e3f1ec] rounded-xl h-28 p-2 hover:bg-[#eefaf5]"
+              {!isOwner && (
+                <button
+                  onClick={
+                    connectionStatus === "none" ? handleConnect : undefined
+                  }
+                  disabled={connectionStatus === "accepted"}
+                  className={`mt-4 px-6 py-2 rounded-full text-white ${
+                    connectionStatus === "accepted"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : connectionStatus === "interested"
+                        ? "bg-yellow-500"
+                        : "bg-emerald-600"
+                  }`}
                 >
-                  <div className="font-semibold">{i + 1}</div>
-                </div>
-              ))}
+                  {connectionStatus === "accepted"
+                    ? "CONNECTED"
+                    : connectionStatus === "interested"
+                      ? "REQUEST SENT"
+                      : "CONNECT"}
+                </button>
+              )}
             </div>
           </div>
         </div>
-      )}
+
+        {/* OWNER ACTIONS */}
+        {isOwner && !id && (
+          <>
+            <div
+              onClick={() => setShowUpload(true)}
+              className="bg-white rounded-xl shadow p-4 cursor-pointer"
+            >
+              ✨ Share something
+            </div>
+
+            <div
+              onClick={() => setShowCalendar((p) => !p)}
+              className="bg-white rounded-xl shadow p-4 cursor-pointer"
+            >
+              📅 My Calendar
+            </div>
+          </>
+        )}
+
+        {showCalendar && <MentorCalendar />}
+
+        {/* GRID */}
+        <div className="grid grid-cols-3 gap-[2px]">
+          {posts.map((post, i) => {
+            const isVideo =
+              post.mediaUrl?.includes("/videos/") ||
+              post.mediaUrl?.endsWith(".mp4");
+
+            return (
+              <div
+                key={post._id}
+                onClick={() => setActiveIndex(i)}
+                className="aspect-square bg-black cursor-pointer"
+              >
+                {isVideo ? (
+                  <video
+                    src={encodeURI(post.mediaUrl)}
+                    muted
+                    preload="metadata"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={post.mediaUrl}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* FIXED SCROLLABLE MODAL */}
+        {activeIndex !== null && (
+          <div className="fixed inset-0 bg-black/60 z-50 overflow-y-auto">
+            <div className="max-w-2xl mx-auto py-10 space-y-10">
+              {posts.map((post) => {
+                const isVideo =
+                  post.mediaUrl?.endsWith(".mp4") ||
+                  post.mediaUrl?.includes("/videos/");
+
+                return (
+                  <div
+                    key={post._id}
+                    className="bg-white rounded-xl shadow overflow-hidden mx-4"
+                  >
+                    {/* HEADER */}
+                    <div className="flex justify-between items-center p-4 border-b">
+                      <div>
+                        <p className="font-semibold">
+                          {profile.firstName} {profile.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500">Mentor</p>
+                      </div>
+
+                      {isOwner && (
+                        <div className="relative">
+                          <button
+                            onClick={() =>
+                              setOpenMenuId(
+                                openMenuId === post._id ? null : post._id,
+                              )
+                            }
+                          >
+                            ⋮
+                          </button>
+
+                          {openMenuId === post._id && (
+                            <div className="absolute right-0 mt-2 bg-white shadow rounded w-32 z-50">
+                              <button
+                                onClick={() => {
+                                  setEditingPost(post);
+                                  setEditCaption(post.caption || "");
+                                  setOpenMenuId(null);
+                                }}
+                                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeletePost(post._id)}
+                                className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* MEDIA */}
+                    <div className="bg-black flex justify-center items-center">
+                      {isVideo ? (
+                        <video
+                          src={encodeURI(post.mediaUrl)}
+                          controls
+                          preload="metadata"
+                          playsInline
+                          className="max-h-[520px] w-full object-contain bg-black"
+                          onError={() =>
+                            console.log("VIDEO FAILED:", post.mediaUrl)
+                          }
+                        />
+                      ) : (
+                        <img
+                          src={post.mediaUrl}
+                          className="max-h-[520px] w-full object-contain"
+                        />
+                      )}
+                    </div>
+
+                    {/* FOOTER */}
+                    <div className="p-4 text-sm">
+                      <span className="font-semibold mr-1">
+                        {profile.firstName}
+                      </span>
+                      {post.caption}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* CLOSE */}
+            <button
+              onClick={() => setActiveIndex(null)}
+              className="fixed top-6 right-6 text-white text-3xl"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* UPLOAD MODAL */}
+        {showUpload && (
+          <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-xl w-full max-w-md relative">
+              <button
+                onClick={() => setShowUpload(false)}
+                className="absolute top-3 right-3"
+              >
+                ✕
+              </button>
+
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="w-full border p-3 rounded mb-3"
+                placeholder="Write something..."
+              />
+
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="mt-4 w-full bg-emerald-600 text-white py-2 rounded"
+              >
+                {uploading ? "Posting..." : "Post"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT MODAL */}
+        {editingPost && (
+          <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-xl w-full max-w-md relative">
+              <button
+                onClick={() => setEditingPost(null)}
+                className="absolute top-3 right-3"
+              >
+                ✕
+              </button>
+
+              <textarea
+                value={editCaption}
+                onChange={(e) => setEditCaption(e.target.value)}
+                className="w-full border p-3 rounded mb-3"
+              />
+
+              <button
+                onClick={handleSaveEdit}
+                className="w-full bg-emerald-600 text-white py-2 rounded"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
