@@ -43,7 +43,7 @@ export const mentorsByDepartment = {
     },
     {
       id: 6,
-      name: "Pooja Singh",
+      name: "Pooja Verma",
       role: "ML Engineer",
       company: "OpenAI",
       experience: "5+ years",
@@ -60,7 +60,7 @@ export const mentorsByDepartment = {
     },
     {
       id: 8,
-      name: "Pooja Singh",
+      name: "Pooja Mishra",
       role: "ML Engineer",
       company: "OpenAI",
       experience: "5+ years",

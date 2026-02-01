@@ -7,7 +7,7 @@ const StudentProfile = ({ student, onClose }) => {
 
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
+      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70"
       onClick={onClose}   // background click = close
     >
       <div
@@ -18,7 +18,7 @@ const StudentProfile = ({ student, onClose }) => {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 z-[10000] p-1 rounded-full hover:bg-white/10"
+          className="absolute top-3 right-3 z-10000 p-1 rounded-full hover:bg-white/10"
         >
           <X size={22} />
         </button>

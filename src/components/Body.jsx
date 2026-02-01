@@ -23,7 +23,7 @@ const Body = () => {
     } catch (err) {
       if (err.response?.status === 401) {
         dispatch(removeUser());
-        navigate("/"); // landing page
+        navigate("/");
       }
     }
   };

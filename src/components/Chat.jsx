@@ -17,6 +17,8 @@ import StudentProfile from "./StudentProfile";
 import VoiceRecorder from "../components/VoiceRecorder";
 import VoiceBubble from "../components/VoiceBubble";
 import { uploadVoice } from "../services/voiceApi";
+import VideoCall from "./videoCall/VideoCall";
+import IncomingCallModal from "../components/IncomingCallModal";
 import { BASE_URL } from "../utils/constant";
 import { createSocketConnection } from "../utils/socket";
 
@@ -33,7 +35,15 @@ const Chat = () => {
   const [message, setMessage] = useState("");
   const [showStudentProfile, setShowStudentProfile] = useState(false);
 
+  // Video call states
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [activeCall, setActiveCall] = useState(null);
+
   const socketRef = useRef(null);
+  // store user in a ref so socket listeners always see the latest value
+  // without needing it in the dependency array
+  const userRef = useRef(user);
+  userRef.current = user;
 
   // ================= FETCH TARGET USER =================
   useEffect(() => {
@@ -81,16 +91,17 @@ const Chat = () => {
   useEffect(() => {
     if (!userId || !targetUserId) return;
 
-    const socket = createSocketConnection();
+    const socket = createSocketConnection(userId, userRef.current);
     socketRef.current = socket;
 
     socket.emit("joinChat", {
-      firstName: user?.firstName,
+      firstName: userRef.current?.firstName,
       userId,
       targetUserId,
     });
 
-    socket.on("messageRecieved", (msg) => {
+    // named references so .off() removes exactly these listeners
+    const onMessage = (msg) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -100,19 +111,51 @@ const Chat = () => {
           mediaUrl: msg.mediaUrl,
         },
       ]);
-    });
-
-    return () => {
-      socket.off("messageRecieved");
     };
-  }, [userId, targetUserId]);
+
+    const onIncomingCall = ({ caller }) => {
+      console.log("Incoming call from:", caller);
+      setIncomingCall(caller);
+    };
+
+    const onRejected = () => {
+      alert("Call was rejected");
+      setActiveCall(null);
+    };
+
+    const onCancelled = () => {
+      setIncomingCall(null);
+      alert("Call was cancelled");
+    };
+
+    const onEnd = () => {
+      setActiveCall(null);
+      setIncomingCall(null);
+    };
+
+    socket.on("messageRecieved", onMessage);
+    socket.on("video-call:incoming", onIncomingCall);
+    socket.on("video-call:rejected", onRejected);
+    socket.on("video-call:cancelled", onCancelled);
+    socket.on("video-call:end", onEnd);
+
+    // cleanup: remove only these specific named listeners
+    // do NOT disconnect — socket is a singleton shared with VideoCall
+    return () => {
+      socket.off("messageRecieved", onMessage);
+      socket.off("video-call:incoming", onIncomingCall);
+      socket.off("video-call:rejected", onRejected);
+      socket.off("video-call:cancelled", onCancelled);
+      socket.off("video-call:end", onEnd);
+    };
+  }, [userId, targetUserId]); // stable deps — no more re-runs on every render
 
   // ================= SEND TEXT =================
   const handleSend = () => {
     if (!message.trim()) return;
 
     socketRef.current.emit("setMessage", {
-      firstName: user.firstName,
+      firstName: userRef.current.firstName,
       userId,
       targetUserId,
       type: "text",
@@ -128,7 +171,7 @@ const Chat = () => {
       const res = await uploadVoice(blob);
 
       socketRef.current.emit("setMessage", {
-        firstName: user.firstName,
+        firstName: userRef.current.firstName,
         userId,
         targetUserId,
         type: "voice",
@@ -138,6 +181,46 @@ const Chat = () => {
     } catch {
       console.log("voice failed");
     }
+  };
+
+  // ================= VIDEO CALL HANDLERS =================
+  const handleStartCall = () => {
+    if (!targetUser || !user) return;
+    setActiveCall({
+      user: targetUser,
+      isCaller: true,
+    });
+  };
+
+  const handleAcceptCall = () => {
+    if (incomingCall) {
+      // video-call:accepted is now emitted inside VideoCall's init,
+      // after listeners are registered — so the offer can't arrive before we're ready
+      setActiveCall({
+        user: incomingCall,
+        isCaller: false,
+      });
+      setIncomingCall(null);
+    }
+  };
+
+  const handleRejectCall = () => {
+    if (incomingCall) {
+      socketRef.current.emit("video-call:rejected", {
+        to: incomingCall._id,
+      });
+
+      setIncomingCall(null);
+    }
+  };
+
+  const handleEndCall = () => {
+    if (activeCall) {
+      socketRef.current.emit("video-call:end", {
+        to: activeCall.user._id,
+      });
+    }
+    setActiveCall(null);
   };
 
   if (loading) {
@@ -201,7 +284,11 @@ const Chat = () => {
 
             <div className="flex items-center gap-4 text-white">
               <Phone size={20} />
-              <Video size={20} />
+              <Video
+                size={20}
+                className="cursor-pointer hover:text-purple-400"
+                onClick={handleStartCall}
+              />
               <Info size={20} />
             </div>
           </div>
@@ -221,7 +308,7 @@ const Chat = () => {
               </p>
 
               <p className="text-sm text-gray-400 mt-1">
-                You’re now connected on MentorX
+                You're now connected on MentorX
               </p>
 
               <button
@@ -310,10 +397,30 @@ const Chat = () => {
         </div>
       </div>
 
+      {/* Student Profile Modal */}
       {showStudentProfile && targetUser.role === "student" && (
         <StudentProfile
           student={targetUser}
           onClose={() => setShowStudentProfile(false)}
+        />
+      )}
+
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <IncomingCallModal
+          caller={incomingCall}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+        />
+      )}
+
+      {/* Active Video Call — socketRef passed down so VideoCall reuses this socket */}
+      {activeCall && (
+        <VideoCall
+          targetUser={activeCall.user}
+          isCaller={activeCall.isCaller}
+          onClose={handleEndCall}
+          socketRef={socketRef}
         />
       )}
     </>

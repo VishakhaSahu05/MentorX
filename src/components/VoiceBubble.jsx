@@ -18,7 +18,7 @@ const VoiceBubble = ({ src }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-[#6D28D9] px-4 py-3 rounded-2xl w-[260px]">
+    <div className="flex items-center gap-3 bg-[#6D28D9] px-4 py-3 rounded-2xl w-65">
       {/* PLAY BUTTON */}
       <button
         onClick={togglePlay}
@@ -27,23 +27,23 @@ const VoiceBubble = ({ src }) => {
         {playing ? (
           <Pause size={18} className="text-[#6D28D9]" />
         ) : (
-          <Play size={18} className="text-[#6D28D9] ml-[2px]" />
+          <Play size={18} className="text-[#6D28D9] ml-0.5" />
         )}
       </button>
 
       {/* WAVEFORM (VISUAL ONLY) */}
-      <div className="flex items-center gap-[3px] flex-1">
+      <div className="flex items-center gap-0.75 flex-1">
         {[6, 10, 14, 9, 16, 11, 13, 8, 12].map((h, i) => (
           <span
             key={i}
-            className="w-[3px] bg-white/90 rounded-full"
+            className="w-0.75 bg-white/90 rounded-full"
             style={{ height: `${h}px` }}
           />
         ))}
       </div>
 
       {/* DURATION */}
-      <span className="text-xs text-white/90 min-w-[32px] text-right">
+      <span className="text-xs text-white/90 min-w-8 text-right">
         {duration !== null ? `0:${duration.toString().padStart(2, "0")}` : "…"}
       </span>
 
