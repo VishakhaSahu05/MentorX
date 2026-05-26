@@ -3,9 +3,18 @@ import { BASE_URL } from "./constant";
 
 let socket = null;
 let currentUser = null;
-
 const registerUser = () => {
-  if (socket?.connected && currentUser) {
+  console.log("CURRENT USER:", currentUser);
+  console.log("TYPE:", typeof currentUser);
+
+  if (!currentUser) {
+    console.log("NO CURRENT USER");
+    return;
+  }
+
+  console.log("USER ID:", currentUser?._id);
+
+  if (socket?.connected && currentUser?._id) {
     socket.emit("user:register", {
       userId: currentUser._id,
       firstName: currentUser.firstName,
@@ -17,6 +26,8 @@ const registerUser = () => {
       "User registered for video calls:",
       currentUser._id
     );
+  } else {
+    console.log("SOCKET OR USER INVALID");
   }
 };
 
