@@ -12,32 +12,52 @@ const registerUser = () => {
       lastName: currentUser.lastName,
       profilePic: currentUser.profilePic,
     });
-    console.log("User registered for video calls:", currentUser._id);
+
+    console.log(
+      "User registered for video calls:",
+      currentUser._id
+    );
   }
 };
 
-export const createSocketConnection = (userId = null, user = null) => {
+export const createSocketConnection = (user = null) => {
   if (user) {
     currentUser = user;
   }
 
-  if (socket && socket.disconnected) {
-    socket.connect();
-  }
-
+  // create socket only once
   if (!socket) {
-    socket = io(BASE_URL);
+    socket = io(BASE_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+    });
 
-    // fires on EVERY connect/reconnect — handles Vite HMR, page refresh, network drop
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
+
       registerUser();
     });
 
-    socket.on("connect_error", (err) => {
-      console.log("Socket error:", err.message);
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
     });
-  } else if (socket.connected) {
+
+    socket.on("connect_error", (err) => {
+      console.log("Socket connect error:", err.message);
+    });
+  }
+
+  // reconnect if disconnected
+  if (socket.disconnected) {
+    socket.connect();
+  }
+
+  // register again if already connected
+  if (socket.connected) {
     registerUser();
   }
 
@@ -45,3 +65,10 @@ export const createSocketConnection = (userId = null, user = null) => {
 };
 
 export const getSocket = () => socket;
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};
