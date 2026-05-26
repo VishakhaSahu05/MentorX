@@ -91,7 +91,7 @@ const Chat = () => {
   useEffect(() => {
     if (!userId || !targetUserId) return;
 
-    const socket = createSocketConnection(userId, userRef.current);
+    const socket = createSocketConnection(userRef.current);
     socketRef.current = socket;
 
     socket.emit("joinChat", {
