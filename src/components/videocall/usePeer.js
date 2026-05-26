@@ -65,14 +65,16 @@ export function usePeer({
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
 
-        remoteVideoRef.current
-          .play()
-          .then(() => {
-            console.log("Remote video playing");
-          })
-          .catch((err) => {
-            console.error("Remote video play error:", err);
-          });
+        setTimeout(() => {
+          remoteVideoRef.current
+            ?.play()
+            .then(() => {
+              console.log("Remote video playing");
+            })
+            .catch((err) => {
+              console.error("Remote video play error:", err);
+            });
+        }, 100);
       }
 
       setRemoteActive(true);
@@ -94,10 +96,7 @@ export function usePeer({
     }
 
     peer.onconnectionstatechange = () => {
-      console.log(
-        "Connection state:",
-        peer.connectionState
-      );
+      console.log("Connection state:", peer.connectionState);
 
       if (
         peer.connectionState === "failed" ||
@@ -109,17 +108,11 @@ export function usePeer({
     };
 
     peer.onsignalingstatechange = () => {
-      console.log(
-        "Signaling state:",
-        peer.signalingState
-      );
+      console.log("Signaling state:", peer.signalingState);
     };
 
     peer.oniceconnectionstatechange = () => {
-      console.log(
-        "ICE connection state:",
-        peer.iceConnectionState
-      );
+      console.log("ICE connection state:", peer.iceConnectionState);
     };
 
     peerRef.current = peer;
@@ -162,26 +155,19 @@ export function usePeer({
       try {
         console.log("Received offer");
 
-        if (
-          peerRef.current &&
-          peerRef.current.signalingState !== "closed"
-        ) {
+        if (peerRef.current && peerRef.current.signalingState !== "closed") {
           cleanup();
         }
 
         const peer = createPeer();
 
-        await peer.setRemoteDescription(
-          new RTCSessionDescription(offer)
-        );
+        await peer.setRemoteDescription(new RTCSessionDescription(offer));
 
         console.log("Remote description set");
 
         // add pending ICE candidates
         for (const candidate of pendingCandidatesRef.current) {
-          await peer.addIceCandidate(
-            new RTCIceCandidate(candidate)
-          );
+          await peer.addIceCandidate(new RTCIceCandidate(candidate));
         }
 
         pendingCandidatesRef.current = [];
@@ -200,7 +186,7 @@ export function usePeer({
         console.error("Handle offer error:", err);
       }
     },
-    [createPeer, cleanup]
+    [createPeer, cleanup],
   );
 
   // HANDLE ANSWER
@@ -214,16 +200,14 @@ export function usePeer({
       }
 
       await peerRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
+        new RTCSessionDescription(answer),
       );
 
       console.log("Answer remote description set");
 
       // flush pending candidates
       for (const candidate of pendingCandidatesRef.current) {
-        await peerRef.current.addIceCandidate(
-          new RTCIceCandidate(candidate)
-        );
+        await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
 
       pendingCandidatesRef.current = [];
@@ -239,19 +223,12 @@ export function usePeer({
 
       if (!candidate) return;
 
-      if (
-        peerRef.current &&
-        peerRef.current.remoteDescription
-      ) {
-        await peerRef.current.addIceCandidate(
-          new RTCIceCandidate(candidate)
-        );
+      if (peerRef.current && peerRef.current.remoteDescription) {
+        await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
 
         console.log("ICE candidate added");
       } else {
-        console.log(
-          "Queueing ICE candidate until remote description"
-        );
+        console.log("Queueing ICE candidate until remote description");
 
         pendingCandidatesRef.current.push(candidate);
       }

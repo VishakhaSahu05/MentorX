@@ -17,7 +17,9 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
     remoteVideoRef.current = el;
     if (el && remoteStreamRef.current) {
       el.srcObject = remoteStreamRef.current;
-      el.play().catch(console.error);
+      setTimeout(() => {
+        el.play().catch(console.error);
+      }, 100);
     }
   };
 
