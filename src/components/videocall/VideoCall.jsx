@@ -94,7 +94,6 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
           });
         }
 
-  
         if (!isCaller && !acceptEmittedRef.current) {
           acceptEmittedRef.current = true;
           console.log("📞 Emitting video-call:accepted");
@@ -131,21 +130,24 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
       </div>
 
       {/* main video */}
-      <div className="flex items-center justify-center h-full">
-        {remoteActive ? (
-          <video
-            ref={setRemoteVideoEl}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="flex flex-col items-center">
+      <div className="flex items-center justify-center h-full relative">
+        <video
+          ref={setRemoteVideoEl}
+          autoPlay
+          playsInline
+          className={`w-full h-full object-cover ${
+            remoteActive ? "block" : "hidden"
+          }`}
+        />
+
+        {!remoteActive && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
             <img
               src={targetUser.profilePic || DEFAULT_PIC}
               alt={targetUser.firstName}
               className="w-32 h-32 rounded-full object-cover mb-3"
             />
+
             <span className="text-lg font-semibold">
               {targetUser.firstName}
             </span>
