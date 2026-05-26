@@ -1,8 +1,10 @@
 // constants.js
 
-export const BASE_URL = import.meta.env.VITE_BASE_URL;
+export const BASE_URL =
+  "https://mentorx-backend-5xks.onrender.com";
 
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+export const SOCKET_URL =
+  "https://mentorx-backend-5xks.onrender.com";
 
 export const ICE_SERVERS = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
