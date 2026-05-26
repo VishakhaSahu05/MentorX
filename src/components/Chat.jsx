@@ -17,7 +17,7 @@ import StudentProfile from "./StudentProfile";
 import VoiceRecorder from "../components/VoiceRecorder";
 import VoiceBubble from "../components/VoiceBubble";
 import { uploadVoice } from "../services/voiceApi";
-import VideoCall from "./videoCall/VideoCall";
+import VideoCall from "./videocall/VideoCall";
 import IncomingCallModal from "../components/IncomingCallModal";
 import { BASE_URL } from "../utils/constant";
 import { createSocketConnection } from "../utils/socket";
