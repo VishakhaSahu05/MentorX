@@ -10,8 +10,16 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
   const user = useSelector((s) => s.user);
 
   const remoteVideoRef = useRef(null);
-  const remoteStreamRef = useRef(null); // stores stream from ontrack until video element mounts
+  const remoteStreamRef = useRef(null);
   const [remoteActive, setRemoteActive] = useState(false);
+
+  // ✅ Fix: jab remoteActive ho tab stream manually lagao
+  useEffect(() => {
+    if (remoteActive && remoteVideoRef.current && remoteStreamRef.current) {
+      remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      remoteVideoRef.current.play().catch(console.error);
+    }
+  }, [remoteActive]);
 
   const setRemoteVideoEl = (el) => {
     remoteVideoRef.current = el;
@@ -133,12 +141,13 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
 
       {/* main video */}
       <div className="flex items-center justify-center h-full relative">
+        {/* ✅ Fix: hidden ki jagah invisible use karo */}
         <video
           ref={setRemoteVideoEl}
           autoPlay
           playsInline
           className={`w-full h-full object-cover ${
-            remoteActive ? "block" : "hidden"
+            remoteActive ? "visible" : "invisible absolute"
           }`}
         />
 
@@ -149,7 +158,6 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
               alt={targetUser.firstName}
               className="w-32 h-32 rounded-full object-cover mb-3"
             />
-
             <span className="text-lg font-semibold">
               {targetUser.firstName}
             </span>
