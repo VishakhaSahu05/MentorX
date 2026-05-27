@@ -18,6 +18,7 @@ export function usePeer({
     if (peerRef.current) {
       peerRef.current.ontrack = null;
       peerRef.current.onicecandidate = null;
+      clearTimeout(peerRef.current._playTimer);
       peerRef.current.close();
       peerRef.current = null;
     }
@@ -47,6 +48,9 @@ export function usePeer({
           credential: "openrelayproject",
         },
       ],
+      iceTransportPolicy: "all",
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
     });
 
     peer.onicecandidate = (e) => {
@@ -58,11 +62,11 @@ export function usePeer({
       }
     };
 
-    // ✅ Fix: streams[0] nahi mila toh manually MediaStream banao
+    // ✅ Fix: debounce play() so audio+video tracks don't interrupt each other
     peer.ontrack = (e) => {
       console.log("REMOTE TRACK RECEIVED", e.track.kind, e.streams);
 
-      let remoteStream = e.streams?.[0];
+      const remoteStream = e.streams?.[0];
 
       if (remoteStream) {
         remoteStreamRef.current = remoteStream;
@@ -75,10 +79,13 @@ export function usePeer({
 
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        remoteVideoRef.current.play().catch(console.error);
       }
 
-      setRemoteActive(true);
+      clearTimeout(peer._playTimer);
+      peer._playTimer = setTimeout(() => {
+        remoteVideoRef.current?.play().catch(console.error);
+        setRemoteActive(true);
+      }, 300);
     };
 
     const stream = localStreamRef.current;
