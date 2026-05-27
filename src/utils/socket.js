@@ -3,43 +3,41 @@ import { BASE_URL } from "./constant";
 
 let socket = null;
 let currentUser = null;
-const registerUser = () => {
-  console.log("CURRENT USER:", currentUser);
-  console.log("TYPE:", typeof currentUser);
 
-  if (!currentUser) {
-    console.log("NO CURRENT USER");
+const emitRegisterEvent = () => {
+  if (!socket) {
+    console.log("Socket not initialized");
     return;
   }
 
-  console.log("USER ID:", currentUser?._id);
-
-  if (socket?.connected && currentUser?._id) {
-    socket.emit("user:register", {
-      userId: currentUser._id,
-      firstName: currentUser.firstName,
-      lastName: currentUser.lastName,
-      profilePic: currentUser.profilePic,
-    });
-
-    console.log(
-      "User registered for video calls:",
-      currentUser._id
-    );
-  } else {
-    console.log("SOCKET OR USER INVALID");
+  if (!socket.connected) {
+    console.log("Socket not connected");
+    return;
   }
+
+  if (!currentUser?._id) {
+    console.log("Current user missing");
+    return;
+  }
+
+  socket.emit("user:register", {
+    userId: String(currentUser._id),
+    firstName: currentUser.firstName,
+    lastName: currentUser.lastName,
+    profilePic: currentUser.profilePic,
+  });
+
+  console.log("USER REGISTERED:", currentUser._id);
 };
 
-export const createSocketConnection = (user = null) => {
+export const createSocketConnection = (user) => {
   if (user) {
     currentUser = user;
   }
 
-  // create socket only once
   if (!socket) {
     socket = io(BASE_URL, {
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
@@ -50,7 +48,7 @@ export const createSocketConnection = (user = null) => {
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
 
-      registerUser();
+      emitRegisterEvent();
     });
 
     socket.on("disconnect", (reason) => {
@@ -62,24 +60,23 @@ export const createSocketConnection = (user = null) => {
     });
   }
 
-  // reconnect if disconnected
-  if (socket.disconnected) {
-    socket.connect();
-  }
-
-  // register again if already connected
   if (socket.connected) {
-    registerUser();
+    emitRegisterEvent();
   }
 
   return socket;
 };
 
-export const getSocket = () => socket;
+export const getSocket = () => {
+  return socket;
+};
 
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
+    currentUser = null;
+
+    console.log("Socket manually disconnected");
   }
 };
