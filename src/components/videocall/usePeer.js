@@ -1,5 +1,4 @@
 import { useRef, useCallback } from "react";
-import { ICE_SERVERS } from "../../utils/constant";
 
 export function usePeer({
   socketRef,
@@ -15,35 +14,30 @@ export function usePeer({
 
   targetUserRef.current = targetUser;
 
-  // cleanup peer
   const cleanup = useCallback(() => {
     if (peerRef.current) {
       peerRef.current.ontrack = null;
       peerRef.current.onicecandidate = null;
-
       peerRef.current.close();
       peerRef.current = null;
     }
-
     pendingCandidatesRef.current = [];
   }, []);
 
-  // create peer
-  const createPeer = useCallback(() => {
-    // remove old peer
-    if (peerRef.current) {
-      cleanup();
-    }
+  // ✅ UPDATED: async + TURN credentials fetch
+  const createPeer = useCallback(async () => {
+    if (peerRef.current) cleanup();
 
-    const peer = new RTCPeerConnection(ICE_SERVERS);
+    // Backend se ICE servers fetch karo
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/ice-servers`
+    );
+    const iceServers = await res.json();
 
-    console.log("Creating new peer connection");
+    const peer = new RTCPeerConnection({ iceServers });
 
-    // ICE candidates
     peer.onicecandidate = (e) => {
       if (e.candidate) {
-        console.log("Sending ICE candidate");
-
         socketRef.current?.emit("video-call:ice", {
           to: targetUserRef.current?._id,
           candidate: e.candidate,
@@ -51,53 +45,25 @@ export function usePeer({
       }
     };
 
-    // remote stream
     peer.ontrack = (e) => {
-      console.log("REMOTE TRACK RECEIVED");
-      console.log(e.streams);
-
       const remoteStream = e.streams[0];
-
       if (!remoteStream) return;
-
       remoteStreamRef.current = remoteStream;
-
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
-
         setTimeout(() => {
-          remoteVideoRef.current
-            ?.play()
-            .then(() => {
-              console.log("Remote video playing");
-            })
-            .catch((err) => {
-              console.error("Remote video play error:", err);
-            });
+          remoteVideoRef.current?.play().catch(console.error);
         }, 100);
       }
-
       setRemoteActive(true);
     };
 
-    // local tracks
     const stream = localStreamRef.current;
-
-    console.log("LOCAL STREAM:", stream);
-
     if (stream) {
-      stream.getTracks().forEach((track) => {
-        console.log("Adding track:", track.kind);
-
-        peer.addTrack(track, stream);
-      });
-    } else {
-      console.log("No local stream found");
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
     }
 
     peer.onconnectionstatechange = () => {
-      console.log("Connection state:", peer.connectionState);
-
       if (
         peer.connectionState === "failed" ||
         peer.connectionState === "disconnected" ||
@@ -107,39 +73,20 @@ export function usePeer({
       }
     };
 
-    peer.onsignalingstatechange = () => {
-      console.log("Signaling state:", peer.signalingState);
-    };
-
-    peer.oniceconnectionstatechange = () => {
-      console.log("ICE connection state:", peer.iceConnectionState);
-    };
-
     peerRef.current = peer;
-
-    return peer;
+    return peer; // ✅ return karna zaroori hai
   }, [cleanup]);
 
-  // CREATE OFFER
+  // ✅ UPDATED: await createPeer()
   const createOffer = useCallback(async () => {
     try {
-      console.log("Creating offer");
-
-      if (peerRef.current) {
-        cleanup();
-      }
-
-      const peer = createPeer();
-
+      if (peerRef.current) cleanup();
+      const peer = await createPeer(); // await added
       const offer = await peer.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
       });
-
       await peer.setLocalDescription(offer);
-
-      console.log("Sending offer");
-
       socketRef.current?.emit("video-call:offer", {
         to: targetUserRef.current?._id,
         offer,
@@ -149,35 +96,21 @@ export function usePeer({
     }
   }, [createPeer, cleanup]);
 
-  // HANDLE OFFER
+  // ✅ UPDATED: await createPeer()
   const handleOffer = useCallback(
     async ({ offer }) => {
       try {
-        console.log("Received offer");
-
-        if (peerRef.current && peerRef.current.signalingState !== "closed") {
-          cleanup();
-        }
-
-        const peer = createPeer();
-
+        if (peerRef.current) cleanup();
+        const peer = await createPeer(); // await added
         await peer.setRemoteDescription(new RTCSessionDescription(offer));
 
-        console.log("Remote description set");
-
-        // add pending ICE candidates
         for (const candidate of pendingCandidatesRef.current) {
           await peer.addIceCandidate(new RTCIceCandidate(candidate));
         }
-
         pendingCandidatesRef.current = [];
 
         const answer = await peer.createAnswer();
-
         await peer.setLocalDescription(answer);
-
-        console.log("Sending answer");
-
         socketRef.current?.emit("video-call:answer", {
           to: targetUserRef.current?._id,
           answer,
@@ -186,50 +119,31 @@ export function usePeer({
         console.error("Handle offer error:", err);
       }
     },
-    [createPeer, cleanup],
+    [createPeer, cleanup]
   );
 
-  // HANDLE ANSWER
+  // handleAnswer & handleICE same rahenge
   const handleAnswer = useCallback(async ({ answer }) => {
     try {
-      console.log("Received answer");
-
-      if (!peerRef.current) {
-        console.log("No peer connection found");
-        return;
-      }
-
+      if (!peerRef.current) return;
       await peerRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer),
+        new RTCSessionDescription(answer)
       );
-
-      console.log("Answer remote description set");
-
-      // flush pending candidates
       for (const candidate of pendingCandidatesRef.current) {
         await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
-
       pendingCandidatesRef.current = [];
     } catch (err) {
       console.error("Handle answer error:", err);
     }
   }, []);
 
-  // HANDLE ICE
   const handleICE = useCallback(async ({ candidate }) => {
     try {
-      console.log("Received ICE candidate");
-
       if (!candidate) return;
-
       if (peerRef.current && peerRef.current.remoteDescription) {
         await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-
-        console.log("ICE candidate added");
       } else {
-        console.log("Queueing ICE candidate until remote description");
-
         pendingCandidatesRef.current.push(candidate);
       }
     } catch (err) {
@@ -237,11 +151,5 @@ export function usePeer({
     }
   }, []);
 
-  return {
-    createOffer,
-    handleOffer,
-    handleAnswer,
-    handleICE,
-    cleanup,
-  };
+  return { createOffer, handleOffer, handleAnswer, handleICE, cleanup };
 }
