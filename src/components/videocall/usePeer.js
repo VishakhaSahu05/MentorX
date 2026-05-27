@@ -58,16 +58,26 @@ export function usePeer({
       }
     };
 
+    // ✅ Fix: streams[0] nahi mila toh manually MediaStream banao
     peer.ontrack = (e) => {
-      const remoteStream = e.streams[0];
-      if (!remoteStream) return;
-      remoteStreamRef.current = remoteStream;
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
-        setTimeout(() => {
-          remoteVideoRef.current?.play().catch(console.error);
-        }, 100);
+      console.log("REMOTE TRACK RECEIVED", e.track.kind, e.streams);
+
+      let remoteStream = e.streams?.[0];
+
+      if (remoteStream) {
+        remoteStreamRef.current = remoteStream;
+      } else {
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+        }
+        remoteStreamRef.current.addTrack(e.track);
       }
+
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        remoteVideoRef.current.play().catch(console.error);
+      }
+
       setRemoteActive(true);
     };
 
@@ -77,6 +87,7 @@ export function usePeer({
     }
 
     peer.onconnectionstatechange = () => {
+      console.log("Connection state:", peer.connectionState);
       if (
         peer.connectionState === "failed" ||
         peer.connectionState === "disconnected" ||
@@ -84,6 +95,10 @@ export function usePeer({
       ) {
         cleanup();
       }
+    };
+
+    peer.oniceconnectionstatechange = () => {
+      console.log("ICE state:", peer.iceConnectionState);
     };
 
     peerRef.current = peer;
