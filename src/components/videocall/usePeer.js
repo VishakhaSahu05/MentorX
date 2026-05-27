@@ -62,7 +62,6 @@ export function usePeer({
       }
     };
 
-    // ✅ Fix: debounce play() so audio+video tracks don't interrupt each other
     peer.ontrack = (e) => {
       console.log("REMOTE TRACK RECEIVED", e.track.kind, e.streams);
 
@@ -93,6 +92,15 @@ export function usePeer({
       stream.getTracks().forEach((track) => peer.addTrack(track, stream));
     }
 
+    // ✅ Fix: sirf ek oniceconnectionstatechange with restartIce
+    peer.oniceconnectionstatechange = () => {
+      console.log("ICE state:", peer.iceConnectionState);
+      if (peer.iceConnectionState === "failed") {
+        console.log("ICE failed - restarting...");
+        peer.restartIce();
+      }
+    };
+
     peer.onconnectionstatechange = () => {
       console.log("Connection state:", peer.connectionState);
       if (
@@ -102,10 +110,6 @@ export function usePeer({
       ) {
         cleanup();
       }
-    };
-
-    peer.oniceconnectionstatechange = () => {
-      console.log("ICE state:", peer.iceConnectionState);
     };
 
     peerRef.current = peer;
@@ -152,14 +156,14 @@ export function usePeer({
         console.error("Handle offer error:", err);
       }
     },
-    [createPeer, cleanup]
+    [createPeer, cleanup],
   );
 
   const handleAnswer = useCallback(async ({ answer }) => {
     try {
       if (!peerRef.current) return;
       await peerRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
+        new RTCSessionDescription(answer),
       );
       for (const candidate of pendingCandidatesRef.current) {
         await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
