@@ -24,17 +24,30 @@ export function usePeer({
     pendingCandidatesRef.current = [];
   }, []);
 
-  // ✅ UPDATED: async + TURN credentials fetch
   const createPeer = useCallback(async () => {
     if (peerRef.current) cleanup();
 
-    // Backend se ICE servers fetch karo
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/ice-servers`
-    );
-    const iceServers = await res.json();
-
-    const peer = new RTCPeerConnection({ iceServers });
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        {
+          urls: "turn:openrelay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turns:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+      ],
+    });
 
     peer.onicecandidate = (e) => {
       if (e.candidate) {
@@ -74,14 +87,13 @@ export function usePeer({
     };
 
     peerRef.current = peer;
-    return peer; // ✅ return karna zaroori hai
+    return peer;
   }, [cleanup]);
 
-  // ✅ UPDATED: await createPeer()
   const createOffer = useCallback(async () => {
     try {
       if (peerRef.current) cleanup();
-      const peer = await createPeer(); // await added
+      const peer = await createPeer();
       const offer = await peer.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
@@ -96,12 +108,11 @@ export function usePeer({
     }
   }, [createPeer, cleanup]);
 
-  // ✅ UPDATED: await createPeer()
   const handleOffer = useCallback(
     async ({ offer }) => {
       try {
         if (peerRef.current) cleanup();
-        const peer = await createPeer(); // await added
+        const peer = await createPeer();
         await peer.setRemoteDescription(new RTCSessionDescription(offer));
 
         for (const candidate of pendingCandidatesRef.current) {
@@ -122,7 +133,6 @@ export function usePeer({
     [createPeer, cleanup]
   );
 
-  // handleAnswer & handleICE same rahenge
   const handleAnswer = useCallback(async ({ answer }) => {
     try {
       if (!peerRef.current) return;
