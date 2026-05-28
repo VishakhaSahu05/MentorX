@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from "lucide-react";
 import { useSelector } from "react-redux";
 import AgoraRTC from "agora-rtc-sdk-ng";
-import { DEFAULT_PIC } from "../../utils/constant";
-import { BASE_URL } from "../../utils/constant";
+import { DEFAULT_PIC, BASE_URL } from "../../utils/constant";
 
 const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
   const user = useSelector((s) => s.user);
@@ -19,6 +18,13 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
   useEffect(() => {
     const init = async () => {
       try {
+        // ✅ Caller ke liye socket emit karo taaki dusre ko incoming call aaye
+        if (isCaller) {
+          socketRef.current?.emit("video-call:start", {
+            to: targetUser._id,
+          });
+        }
+
         // Token fetch karo backend se
         const res = await fetch(
           `${BASE_URL}/api/agora-token?channelName=${channelName}&uid=0`
@@ -50,7 +56,8 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
         await client.join(appId, channelName, token, 0);
 
         // Local tracks banao
-        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+        const [audioTrack, videoTrack] =
+          await AgoraRTC.createMicrophoneAndCameraTracks();
         localAudioTrackRef.current = audioTrack;
         localVideoTrackRef.current = videoTrack;
 
@@ -59,7 +66,6 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
 
         // Publish karo
         await client.publish([audioTrack, videoTrack]);
-
       } catch (err) {
         console.error("Agora init error:", err);
       }
@@ -89,6 +95,7 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
   };
 
   const handleClose = async () => {
+    socketRef.current?.emit("video-call:end", { to: targetUser._id });
     localVideoTrackRef.current?.close();
     localAudioTrackRef.current?.close();
     await clientRef.current?.leave();
@@ -118,7 +125,9 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
               alt={targetUser.firstName}
               className="w-32 h-32 rounded-full object-cover mb-3"
             />
-            <span className="text-lg font-semibold">{targetUser.firstName}</span>
+            <span className="text-lg font-semibold">
+              {targetUser.firstName}
+            </span>
           </div>
         )}
       </div>
@@ -140,7 +149,9 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
       <div className="absolute bottom-8 w-full flex justify-center gap-6">
         <button
           onClick={toggleMic}
-          className={`w-14 h-14 rounded-full ${micOn ? "bg-gray-700" : "bg-red-600"} flex items-center justify-center`}
+          className={`w-14 h-14 rounded-full ${
+            micOn ? "bg-gray-700" : "bg-red-600"
+          } flex items-center justify-center`}
         >
           {micOn ? <Mic /> : <MicOff />}
         </button>
@@ -154,7 +165,9 @@ const VideoCall = ({ targetUser, onClose, isCaller, socketRef }) => {
 
         <button
           onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full ${cameraOn ? "bg-gray-700" : "bg-red-600"} flex items-center justify-center`}
+          className={`w-14 h-14 rounded-full ${
+            cameraOn ? "bg-gray-700" : "bg-red-600"
+          } flex items-center justify-center`}
         >
           {cameraOn ? <Video /> : <VideoOff />}
         </button>
