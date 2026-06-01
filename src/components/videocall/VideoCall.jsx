@@ -48,7 +48,6 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
   // Stable numeric UID from last 8 chars of MongoDB ObjectId (avoids uid=0 collision)
   const localUidNum = (parseInt(user._id.slice(-8), 16) % 100000) + 1;
 
-  
   const playInto = useCallback((track, divId) => {
     if (!track) return;
     const el = document.getElementById(divId);
@@ -77,7 +76,6 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     );
   }, [playInto]);
 
-  
   useEffect(() => {
     const init = async () => {
       try {
@@ -174,7 +172,6 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
- 
   useEffect(() => {
     if (!agoraReady) return;
     // requestAnimationFrame = after browser paint = DOM is 100% ready
@@ -190,6 +187,18 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     const id = setTimeout(reattachAll, 80);
     return () => clearTimeout(id);
   }, [showWhiteboard, agoraReady, reattachAll]);
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+
+    const handleToggle = ({ open }) => {
+      setShowWhiteboard(open);
+    };
+
+    socket.on("whiteboard:toggle", handleToggle);
+    return () => socket.off("whiteboard:toggle", handleToggle);
+  }, [socketRef]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const toggleMic = () => {
@@ -303,7 +312,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         <div className="flex-1 bg-white overflow-hidden">
           {showWhiteboard && (
             <Suspense fallback={<div className="w-full h-full bg-white" />}>
-             <Whiteboard socketRef={socketRef} roomId={channelName} />
+              <Whiteboard socketRef={socketRef} roomId={channelName} />
             </Suspense>
           )}
         </div>
@@ -385,7 +394,14 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
         <CtrlBtn
           accent={showWhiteboard}
-          onClick={() => setShowWhiteboard((v) => !v)}
+          onClick={() => {
+            const next = !showWhiteboard;
+            setShowWhiteboard(next);
+            socketRef.current?.emit("whiteboard:toggle", {
+              to: targetUser._id,
+              open: next,
+            });
+          }}
           title="Toggle whiteboard"
         >
           <Pencil size={17} />
