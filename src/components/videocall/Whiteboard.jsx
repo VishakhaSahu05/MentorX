@@ -37,7 +37,11 @@ const Whiteboard = ({ socketRef, roomId }) => {
   }, [socketRef]); // socketRef is stable, this runs once — that's fine now that we guard with reregister
   const handleChange = useCallback(
     (elements, appState) => {
-      if (isRemoteUpdate.current) return; // skip echoing remote changes
+      console.log("EMITTING UPDATE", elements.length);
+
+      if (isRemoteUpdate.current) return;
+      console.log("handleChange", isRemoteUpdate.current);
+
       socketRef?.current?.emit("whiteboard:update", {
         roomId,
         elements,
@@ -49,7 +53,6 @@ const Whiteboard = ({ socketRef, roomId }) => {
     },
     [socketRef, roomId],
   );
-
   return (
     <div style={{ width: "100%", height: "100%" }}>
       <Excalidraw
