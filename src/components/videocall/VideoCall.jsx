@@ -48,7 +48,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
   // Stable numeric UID from last 8 chars of MongoDB ObjectId (avoids uid=0 collision)
   const localUidNum = (parseInt(user._id.slice(-8), 16) % 100000) + 1;
 
-  // ── play a track into a div by ID ───────────────────────────────────────
+  
   const playInto = useCallback((track, divId) => {
     if (!track) return;
     const el = document.getElementById(divId);
@@ -65,7 +65,6 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     }
   }, []);
 
-  // ── re-attach both tracks to whichever layout is visible ────────────────
   const reattachAll = useCallback(() => {
     const isBoard = showWBRef.current;
     playInto(
@@ -78,7 +77,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     );
   }, [playInto]);
 
-  // ── Agora init ───────────────────────────────────────────────────────────
+  
   useEffect(() => {
     const init = async () => {
       try {
@@ -175,9 +174,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Play local video AFTER React has painted the DOM ────────────────────
-  // This fires after the first render that has agoraReady=true,
-  // so div#vc-local-normal is guaranteed to exist in the DOM.
+ 
   useEffect(() => {
     if (!agoraReady) return;
     // requestAnimationFrame = after browser paint = DOM is 100% ready
@@ -233,7 +230,6 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1c1e21] text-white overflow-hidden">
-      {/* ══ NORMAL MODE ══════════════════════════════════════════════════════ */}
       <div
         className="absolute inset-0 transition-opacity duration-200"
         style={{
@@ -307,7 +303,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         <div className="flex-1 bg-white overflow-hidden">
           {showWhiteboard && (
             <Suspense fallback={<div className="w-full h-full bg-white" />}>
-              <Whiteboard />
+             <Whiteboard socketRef={socketRef} roomId={channelName} />
             </Suspense>
           )}
         </div>
