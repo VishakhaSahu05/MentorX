@@ -40,12 +40,11 @@ const Chat = () => {
   const [activeCall, setActiveCall] = useState(null);
 
   const socketRef = useRef(null);
-  // store user in a ref so socket listeners always see the latest value
-  // without needing it in the dependency array
   const userRef = useRef(user);
   userRef.current = user;
+  const messagesEndRef = useRef(null);
 
-  // ================= FETCH TARGET USER =================
+  //  FETCH TARGET USER 
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -63,7 +62,7 @@ const Chat = () => {
     fetchUser();
   }, [targetUserId]);
 
-  // ================= FETCH OLD CHAT =================
+  //  FETCH OLD CHAT 
   useEffect(() => {
     if (!userId) return;
 
@@ -87,7 +86,12 @@ const Chat = () => {
     fetchChat();
   }, [userId, targetUserId]);
 
-  // ================= SOCKET =================
+  //  AUTO SCROLL 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // SOCKET 
   useEffect(() => {
     if (!userId || !targetUserId) return;
 
@@ -100,7 +104,6 @@ const Chat = () => {
       targetUserId,
     });
 
-    // named references so .off() removes exactly these listeners
     const onMessage = (msg) => {
       setMessages((prev) => [
         ...prev,
@@ -139,8 +142,6 @@ const Chat = () => {
     socket.on("video-call:cancelled", onCancelled);
     socket.on("video-call:end", onEnd);
 
-    // cleanup: remove only these specific named listeners
-    // do NOT disconnect — socket is a singleton shared with VideoCall
     return () => {
       socket.off("messageRecieved", onMessage);
       socket.off("video-call:incoming", onIncomingCall);
@@ -148,9 +149,9 @@ const Chat = () => {
       socket.off("video-call:cancelled", onCancelled);
       socket.off("video-call:end", onEnd);
     };
-  }, [userId, targetUserId]); // stable deps — no more re-runs on every render
+  }, [userId, targetUserId]);
 
-  // ================= SEND TEXT =================
+  //  SEND TEXT 
   const handleSend = () => {
     if (!message.trim()) return;
 
@@ -165,7 +166,7 @@ const Chat = () => {
     setMessage("");
   };
 
-  // ================= SEND VOICE =================
+  //  SEND VOICE 
   const handleSendVoice = async (blob, duration) => {
     try {
       const res = await uploadVoice(blob);
@@ -183,7 +184,7 @@ const Chat = () => {
     }
   };
 
-  // ================= VIDEO CALL HANDLERS =================
+  //  VIDEO CALL HANDLERS
   const handleStartCall = () => {
     if (!targetUser || !user) return;
     setActiveCall({
@@ -194,8 +195,6 @@ const Chat = () => {
 
   const handleAcceptCall = () => {
     if (incomingCall) {
-      // video-call:accepted is now emitted inside VideoCall's init,
-      // after listeners are registered — so the offer can't arrive before we're ready
       setActiveCall({
         user: incomingCall,
         isCaller: false,
@@ -364,6 +363,7 @@ const Chat = () => {
                   </div>
                 );
               })}
+              <div ref={messagesEndRef} />
             </div>
           </div>
 
@@ -414,7 +414,7 @@ const Chat = () => {
         />
       )}
 
-      {/* Active Video Call — socketRef passed down so VideoCall reuses this socket */}
+      {/* Active Video Call */}
       {activeCall && (
         <VideoCall
           targetUser={activeCall.user}
