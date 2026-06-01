@@ -10,17 +10,24 @@ const Whiteboard = ({ socketRef, roomId }) => {
     if (!socket) return;
 
     const handleRemoteDraw = ({ elements, appState }) => {
+      console.log("REMOTE DRAW RECEIVED");
+
       if (!excalidrawApiRef.current) return;
+
       isRemoteUpdate.current = true;
+
+      console.log("FLAG TRUE");
+
       excalidrawApiRef.current.updateScene({
         elements,
         appState: { ...appState, collaborators: new Map() },
       });
+
       setTimeout(() => {
+        console.log("FLAG FALSE");
         isRemoteUpdate.current = false;
       }, 50);
     };
-
     socket.on("whiteboard:update", handleRemoteDraw);
 
     // Re-register if socket reconnects
