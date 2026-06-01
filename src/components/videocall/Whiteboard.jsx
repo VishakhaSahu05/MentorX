@@ -16,7 +16,9 @@ const Whiteboard = ({ socketRef, roomId }) => {
         elements,
         appState: { ...appState, collaborators: new Map() },
       });
-      isRemoteUpdate.current = false;
+      setTimeout(() => {
+        isRemoteUpdate.current = false;
+      }, 50);
     };
 
     socket.on("whiteboard:update", handleRemoteDraw);
