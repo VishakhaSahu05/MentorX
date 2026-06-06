@@ -44,11 +44,13 @@ const Whiteboard = ({ socketRef, roomId }) => {
   }, [socketRef]); // socketRef is stable, this runs once — that's fine now that we guard with reregister
   const handleChange = useCallback(
     (elements, appState) => {
-      console.log("EMITTING UPDATE", elements.length);
-
+      console.log(
+        "EMITTING roomId:",
+        roomId,
+        "socket:",
+        socketRef?.current?.id,
+      );
       if (isRemoteUpdate.current) return;
-      console.log("handleChange", isRemoteUpdate.current);
-
       socketRef?.current?.emit("whiteboard:update", {
         roomId,
         elements,

@@ -309,7 +309,10 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         }}
       >
         {/* Whiteboard */}
-        <div className="flex-1 bg-white overflow-hidden">
+        <div
+          className="flex-1 bg-white overflow-hidden"
+          style={{ paddingTop: 44 }}
+        >
           {showWhiteboard && (
             <Suspense fallback={<div className="w-full h-full bg-white" />}>
               <Whiteboard socketRef={socketRef} roomId={channelName} />
@@ -418,9 +421,13 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
       {/* Status */}
       <div
-        className="absolute top-4 left-1/2 -translate-x-1/2 z-50
-                      px-4 py-1 rounded-full text-xs text-gray-300
-                      bg-black/50 backdrop-blur pointer-events-none select-none"
+        className="absolute left-1/2 -translate-x-1/2 z-50
+                px-4 py-1 rounded-full text-xs text-gray-300
+                bg-black/50 backdrop-blur pointer-events-none select-none"
+        style={{
+          top: showWhiteboard ? "auto" : 16,
+          bottom: showWhiteboard ? 90 : "auto",
+        }}
       >
         {remoteActive
           ? `Connected with ${targetUser.firstName}`
