@@ -1,3 +1,4 @@
+// src/components/Chat.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -19,6 +20,7 @@ import VoiceBubble from "../components/VoiceBubble";
 import { uploadVoice } from "../services/voiceApi";
 import VideoCall from "./videocall/VideoCall";
 import IncomingCallModal from "../components/IncomingCallModal";
+import AiSummaryButton from "../components/AiSummaryButton"; // ✨ AI Summary
 import { BASE_URL } from "../utils/constant";
 import { createSocketConnection } from "../utils/socket";
 
@@ -44,7 +46,7 @@ const Chat = () => {
   userRef.current = user;
   const messagesEndRef = useRef(null);
 
-  //  FETCH TARGET USER 
+  //  FETCH TARGET USER
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -62,7 +64,7 @@ const Chat = () => {
     fetchUser();
   }, [targetUserId]);
 
-  //  FETCH OLD CHAT 
+  //  FETCH OLD CHAT
   useEffect(() => {
     if (!userId) return;
 
@@ -86,12 +88,12 @@ const Chat = () => {
     fetchChat();
   }, [userId, targetUserId]);
 
-  //  AUTO SCROLL 
+  //  AUTO SCROLL
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // SOCKET 
+  // SOCKET
   useEffect(() => {
     if (!userId || !targetUserId) return;
 
@@ -151,7 +153,7 @@ const Chat = () => {
     };
   }, [userId, targetUserId]);
 
-  //  SEND TEXT 
+  //  SEND TEXT
   const handleSend = () => {
     if (!message.trim()) return;
 
@@ -166,7 +168,7 @@ const Chat = () => {
     setMessage("");
   };
 
-  //  SEND VOICE 
+  //  SEND VOICE
   const handleSendVoice = async (blob, duration) => {
     try {
       const res = await uploadVoice(blob);
@@ -208,7 +210,6 @@ const Chat = () => {
       socketRef.current.emit("video-call:rejected", {
         to: incomingCall._id,
       });
-
       setIncomingCall(null);
     }
   };
@@ -242,24 +243,25 @@ const Chat = () => {
     <>
       <style>
         {`
-  .hide-scrollbar {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .hide-scrollbar {
-    scroll-behavior: smooth;
-  }
-`}
+          .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            scroll-behavior: smooth;
+          }
+        `}
       </style>
+
       <div className="min-h-screen bg-[#f4f6f5] flex justify-center pt-28 pb-10">
         <div className="w-full max-w-3xl h-[82vh] bg-black rounded-3xl shadow-2xl flex flex-col">
+
           {/* ================= HEADER ================= */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            {/* Left: back + avatar + name */}
             <div className="flex items-center gap-3">
               <ArrowLeft
                 size={20}
@@ -281,20 +283,27 @@ const Chat = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-white">
+            {/* Right: action icons */}
+            <div className="flex items-center gap-3 text-white">
               <Phone size={20} />
+
               <Video
                 size={20}
                 className="cursor-pointer hover:text-purple-400"
                 onClick={handleStartCall}
               />
+
+              {/* ✨ AI Summary Button */}
+              <AiSummaryButton conversationId={targetUserId} />
+
               <Info size={20} />
             </div>
           </div>
 
           {/* ================= BODY ================= */}
           <div className="flex-1 overflow-y-auto px-6 py-6 hide-scrollbar">
-            {/* CENTER CARD */}
+
+            {/* CENTER PROFILE CARD */}
             <div className="text-center mb-10">
               <img
                 src={targetUser.profilePic}
@@ -355,10 +364,7 @@ const Chat = () => {
                       `}
                     >
                       {msg.type === "text" && msg.text}
-
-                      {msg.type === "voice" && (
-                        <VoiceBubble src={msg.mediaUrl} />
-                      )}
+                      {msg.type === "voice" && <VoiceBubble src={msg.mediaUrl} />}
                     </div>
                   </div>
                 );
