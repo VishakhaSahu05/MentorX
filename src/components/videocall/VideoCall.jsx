@@ -65,7 +65,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
   // Screen share uses a different UID so Agora treats it as a separate publisher
   const screenUidNum = localUidNum + 100000;
 
-  // ── helpers ─────────────────────────────────────────────────────────────
+  //helpers 
   const playInto = useCallback((track, divId) => {
     if (!track) return;
     const el = document.getElementById(divId);
@@ -96,7 +96,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     );
   }, [playInto, isSharingScreen]);
 
-  // ── Agora init ───────────────────────────────────────────────────────────
+  //Agora init
   useEffect(() => {
     const init = async () => {
       try {
@@ -202,7 +202,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── play local video after DOM ready ────────────────────────────────────
+  // play local video after DOM ready 
   useEffect(() => {
     if (!agoraReady) return;
     const raf = requestAnimationFrame(() => {
@@ -217,7 +217,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     return () => clearTimeout(id);
   }, [showWhiteboard, agoraReady, reattachAll]);
 
-  // ── whiteboard toggle sync ───────────────────────────────────────────────
+  //whiteboard toggle sync 
   useEffect(() => {
     const socket = socketRef?.current;
     if (!socket) return;
@@ -236,7 +236,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
       return () => clearTimeout(id);
     }
   }, [screenActive, showWhiteboard, agoraReady, playInto]);
-  // ── screen share ─────────────────────────────────────────────────────────
+  //screen share 
   const startScreenShare = useCallback(async () => {
     const client = clientRef.current;
     if (!client) return;
@@ -302,7 +302,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     else startScreenShare();
   }, [isSharingScreen, startScreenShare, stopScreenShare]);
 
-  // ── controls ─────────────────────────────────────────────────────────────
+  //controls
   const toggleMic = () => {
     localAudioTrackRef.current?.setEnabled(!micOn);
     setMicOn((v) => !v);
@@ -341,7 +341,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
       </div>
     );
 
-  // ── layout decisions ─────────────────────────────────────────────────────
+  //layout decisions 
   // screenActive = someone is sharing screen (local or remote)
   // Normal mode:  remote fullscreen + local PIP
   // Screen mode:  screen fullscreen + camera tiles on right
@@ -349,7 +349,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1c1e21] text-white overflow-hidden">
-      {/* ══ NORMAL VIDEO MODE ═══════════════════════════════════════════════ */}
+      {/*  NORMAL VIDEO MODE */}
       <div
         className="absolute inset-0 transition-opacity duration-200"
         style={{
@@ -409,7 +409,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         </div>
       </div>
 
-      {/* ══ SCREEN SHARE MODE ════════════════════════════════════════════════ */}
+      {/*SCREEN SHARE MODE */}
       <div
         className="absolute inset-0 flex transition-opacity duration-200"
         style={{
@@ -476,7 +476,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         </div>
       </div>
 
-      {/* ══ WHITEBOARD MODE ══════════════════════════════════════════════════ */}
+      {/*WHITEBOARD MODE */}
       <div
         className="absolute inset-0 flex transition-opacity duration-200"
         style={{
@@ -542,7 +542,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
         </div>
       </div>
 
-      {/* ══ CONTROLS ═════════════════════════════════════════════════════════ */}
+      {/* CONTROLS */}
       <div
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[9999]
                       flex items-center gap-3 px-5 py-3 rounded-full
@@ -613,7 +613,7 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
   );
 };
 
-// ── re-attach cameras into screen-share sidebar ──────────────────────────
+// re-attach cameras into screen-share sidebar 
 // This is handled inside the screenActive useEffect below in VideoCallInner
 // (add this after the whiteboard toggle useEffect)
 

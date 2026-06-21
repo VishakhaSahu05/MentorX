@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Phone, PhoneOff } from "lucide-react";
 
-const DEFAULT_PIC =
-  "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
+const DEFAULT_PIC ="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
 
 // Generates a phone-ringing tone using Web Audio API
 // No external file needed — plays a clean looping ring tone natively
