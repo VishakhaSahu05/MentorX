@@ -74,96 +74,127 @@ const EditProfile = ({ user }) => {
     }
   };
 
+  const fieldClass =
+    "w-full px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow placeholder:text-gray-500";
+
+  const sectionLabelClass =
+    "text-xs font-semibold uppercase tracking-wider text-emerald-400/80 mb-3";
+
   return (
-    <div className="min-h-screen bg-[#eefaf5] pt-32 px-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
-        
-        {/* LEFT : EDIT FORM ================= */}
-        <div className="bg-[#0f2f26] rounded-2xl p-10 shadow-xl text-white">
-          <h2 className="text-3xl font-semibold mb-2">Edit Profile</h2>
-          <p className="text-gray-400 mb-8">
+    <div className="min-h-screen bg-[#eefaf5] pt-24 sm:pt-28 lg:pt-32 px-4 sm:px-6 pb-10">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6 sm:mb-8 text-center lg:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#0b1f1a]">Edit Profile</h1>
+          <p className="text-gray-500 text-sm sm:text-base mt-1">
             Update your details and see how your profile will look in feed.
           </p>
+        </div>
 
-          <input
-            type="text"
-            name="profilePic"
-            value={profilePic}
-            onChange={handleChange}
-            placeholder="Profile picture URL"
-            className="w-full mb-6 px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10"
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <input
-              name="firstName"
-              value={firstName}
-              onChange={handleChange}
-              placeholder="First Name"
-              className="px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10"
-            />
-            <input
-              name="lastName"
-              value={lastName}
-              onChange={handleChange}
-              placeholder="Last Name"
-              className="px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10"
-            />
+        {/* LEFT : EDIT FORM ================= */}
+        <div className="bg-[#0f2f26] rounded-2xl p-6 sm:p-8 shadow-xl text-white space-y-6">
+
+          {/* BASIC INFO */}
+          <div>
+            <p className={sectionLabelClass}>Basic Info</p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                name="profilePic"
+                value={profilePic}
+                onChange={handleChange}
+                placeholder="Profile picture URL"
+                className={fieldClass}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input
+                  name="firstName"
+                  value={firstName}
+                  onChange={handleChange}
+                  placeholder="First Name"
+                  className={fieldClass}
+                />
+                <input
+                  name="lastName"
+                  value={lastName}
+                  onChange={handleChange}
+                  placeholder="Last Name"
+                  className={fieldClass}
+                />
+              </div>
+
+              <select
+                name="department"
+                value={department}
+                onChange={handleChange}
+                className={fieldClass}
+              >
+                <option value="">Select Department</option>
+                <option value="CSE">CSE</option>
+                <option value="IT">IT</option>
+                <option value="AI">AI</option>
+                <option value="ECE">ECE</option>
+                <option value="CIVIL">CIVIL</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+            </div>
           </div>
 
-          <select
-            name="department"
-            value={department}
-            onChange={handleChange}
-            className="w-full mb-6 px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10 text-white"
-          >
-            <option value="">Select Department</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="AI">AI</option>
-            <option value="ECE">ECE</option>
-            <option value="CIVIL">CIVIL</option>
-            <option value="OTHER">OTHER</option>
-          </select>
+          <div className="h-px bg-white/10" />
 
-          <input
-            name="skills"
-            value={skills}
-            onChange={handleChange}
-            placeholder="Skills (comma separated)"
-            className="w-full mb-6 px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10"
-          />
+          {/* BACKGROUND */}
+          <div>
+            <p className={sectionLabelClass}>Background</p>
+            <div className="space-y-4">
+              <input
+                name="skills"
+                value={skills}
+                onChange={handleChange}
+                placeholder="Skills (comma separated)"
+                className={fieldClass}
+              />
 
-          <input
-            name="experience"
-            value={experience}
-            onChange={handleChange}
-            placeholder="Experience (e.g. Amazon)"
-            className="w-full mb-6 px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10"
-          />
+              <input
+                name="experience"
+                value={experience}
+                onChange={handleChange}
+                placeholder="Experience (e.g. Amazon)"
+                className={fieldClass}
+              />
 
-          <textarea
-            name="about"
-            value={about}
-            onChange={handleChange}
-            rows="4"
-            placeholder="About you"
-            className="w-full mb-6 px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10 resize-none"
-          />
+              <textarea
+                name="about"
+                value={about}
+                onChange={handleChange}
+                rows="4"
+                placeholder="About you"
+                className={`${fieldClass} resize-none`}
+              />
+            </div>
+          </div>
 
-          {error && <p className="text-red-400 mb-3">{error}</p>}
+          {error && (
+            <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg py-2 px-3">
+              {error}
+            </p>
+          )}
 
           <button
             onClick={saveProfile}
             disabled={loading}
-            className="w-full py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold disabled:opacity-60"
+            className="w-full py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold disabled:opacity-60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f2f26]"
           >
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
 
         {/* ================= RIGHT : PREVIEW ================= */}
-        <div className="flex justify-center mt-24 lg:mt-32">
+        <div className="flex flex-col items-center lg:items-start">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 self-center lg:self-start">
+            Live Preview
+          </p>
           <PreviewCard
             firstName={firstName}
             lastName={lastName}
@@ -174,6 +205,7 @@ const EditProfile = ({ user }) => {
           />
         </div>
 
+        </div>
       </div>
     </div>
   );

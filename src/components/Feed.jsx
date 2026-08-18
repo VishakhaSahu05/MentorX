@@ -1,10 +1,14 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { ImageOff } from "lucide-react";
 import { BASE_URL } from "../utils/constant";
 import { useDispatch, useSelector } from "react-redux";
 import { addFeed, appendFeed, resetFeed } from "../utils/feedSlice";
 import { useNavigate } from "react-router-dom";
 import LeftSidebar from "../components/LeftSideBar";
+import SuggestedMentors from "../components/SuggestedMentors";
+import ExploreTopics from "../components/ExploreTopics";
+import PostFeedCard from "../components/PostFeedCard";
 
 const Feed = () => {
   const feed = useSelector((store) => store.feed);
@@ -72,108 +76,58 @@ const Feed = () => {
   }, [page]);
 
   return (
-    <div className="min-h-screen bg-[#eefaf5] py-10">
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div className="min-h-screen bg-[#eefaf5] pt-24 sm:pt-28 pb-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex gap-6 justify-center">
 
         {/* LEFT SIDEBAR – ONLY FOR STUDENT */}
         {user?.role === "student" && (
-          <div className="hidden md:block md:col-span-1">
+          <div className="hidden md:flex md:flex-col gap-5 w-72 shrink-0">
             <LeftSidebar />
+            <SuggestedMentors />
+            <ExploreTopics />
           </div>
         )}
 
         {/* FEED */}
-        <div
-          className={
-            user?.role === "student"
-              ? "md:col-span-3"
-              : "md:col-span-4"
-          }
-        >
-          <h1 className="text-3xl font-semibold mb-10 text-[#0b1f1a]">
-            Feed
-          </h1>
+        <div className="w-full max-w-[640px] min-w-0">
+          <div className="flex items-baseline justify-between mb-5 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-[#0b1f1a]">
+              Feed
+            </h1>
+            {feed.length > 0 && (
+              <span className="text-sm text-gray-500">{feed.length} posts</span>
+            )}
+          </div>
 
           {feed.length === 0 && !loading && (
-            <p className="text-center text-gray-500">
-              No posts available right now
-            </p>
+            <div className="flex flex-col items-center justify-center text-center py-16 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <span className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                <ImageOff size={20} className="text-gray-400" />
+              </span>
+              <p className="text-sm font-medium text-gray-700">No posts available right now</p>
+              <p className="text-xs text-gray-500 mt-1">Check back later for updates from mentors.</p>
+            </div>
           )}
 
-          {feed.map((post) => {
-            const isVideo = post.mediaType === "video";
-
-            return (
-              <div
-                key={post._id}
-                className="mb-12 bg-white rounded-2xl shadow-lg overflow-hidden"
-              >
-                {/* HEADER */}
-                <div
-                  className="flex items-center gap-3 px-6 py-4 cursor-pointer"
-                  onClick={() =>
-                    navigate(`/mentor/${post.mentor._id}`)
-                  }
-                >
-                  <img
-                    src={
-                      post.mentor?.profilePic ||
-                      "/default-avatar.png"
-                    }
-                    alt="mentor"
-                    className="w-11 h-11 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold text-[#0b1f1a] leading-none">
-                      {post.mentor?.firstName}{" "}
-                      {post.mentor?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Mentor
-                    </p>
-                  </div>
-                </div>
-
-                {/* MEDIA */}
-                <div className="w-full aspect-[4/3] bg-black">
-                  {isVideo ? (
-                    <video
-                      src={post.mediaUrl}
-                      controls
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={post.mediaUrl}
-                      alt="post"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-
-                {/* CAPTION */}
-                {post.caption && (
-                  <div className="px-6 py-4">
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {post.caption}
-                    </p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {feed.map((post) => (
+            <PostFeedCard
+              key={post._id}
+              post={post}
+              authorName={`${post.mentor?.firstName || ""} ${post.mentor?.lastName || ""}`.trim()}
+              authorPic={post.mentor?.profilePic}
+              onAuthorClick={() => navigate(`/mentor/${post.mentor._id}`)}
+              className="mb-5 sm:mb-6"
+            />
+          ))}
 
           {loading && (
-            <p className="text-center text-gray-500">
+            <p className="text-center text-gray-500 py-4">
               Loading...
             </p>
           )}
 
           {!hasMore && feed.length > 0 && (
-            <p className="text-center text-gray-400 mt-6">
+            <p className="text-center text-gray-400 text-sm mt-2 pb-4">
               You have reached the end
             </p>
           )}

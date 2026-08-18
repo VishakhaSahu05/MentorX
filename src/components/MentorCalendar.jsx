@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { CalendarX2 } from "lucide-react";
 import { BASE_URL } from "../utils/constant";
 
 export default function MentorCalendar() {
@@ -60,13 +61,18 @@ export default function MentorCalendar() {
   }, {});
 
   return (
-    <div className="mt-6 bg-white rounded-2xl shadow-lg p-6">
+    <div className="mt-6 bg-white rounded-2xl shadow-lg p-4 sm:p-6">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">📅 My Calendar</h2>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">📅 My Calendar</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {events.length === 0 ? "No events scheduled" : `${events.length} upcoming event${events.length === 1 ? "" : "s"}`}
+          </p>
+        </div>
         <button
           onClick={() => setShowForm((p) => !p)}
-          className="bg-emerald-600 text-white px-4 py-2 rounded-full text-sm hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
         >
           + Add Event
         </button>
@@ -79,33 +85,33 @@ export default function MentorCalendar() {
             placeholder="Event title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow"
           />
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="border rounded-lg px-3 py-2"
+              className="border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow w-full sm:flex-1"
             />
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="border rounded-lg px-3 py-2"
+              className="border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow w-full sm:flex-1"
             />
             <input
               type="number"
               value={duration}
               onChange={(e) => setDuration(+e.target.value)}
-              className="border rounded-lg px-3 py-2 w-24"
+              className="border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow w-full sm:w-24"
             />
           </div>
 
           <button
             onClick={handleAdd}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
             Save
           </button>
@@ -114,9 +120,13 @@ export default function MentorCalendar() {
 
       {/* EVENTS */}
       {Object.keys(groupedEvents).length === 0 ? (
-        <p className="text-gray-500 text-center py-10">
-          No events scheduled ✨
-        </p>
+        <div className="flex flex-col items-center justify-center text-center py-10">
+          <span className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+            <CalendarX2 size={20} className="text-gray-400" />
+          </span>
+          <p className="text-sm font-medium text-gray-700">No events scheduled</p>
+          <p className="text-xs text-gray-500 mt-1">Add an event to start building your schedule.</p>
+        </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedEvents).map(([date, items]) => (
@@ -129,10 +139,10 @@ export default function MentorCalendar() {
                 {items.map((event) => (
                   <div
                     key={event._id}
-                    className="flex items-center justify-between bg-emerald-50 border-l-4 border-emerald-500 rounded-lg px-4 py-3 hover:bg-emerald-100 transition"
+                    className="flex items-center justify-between gap-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-lg px-4 py-3 hover:bg-emerald-100 transition-colors"
                   >
-                    <div>
-                      <p className="font-medium">{event.title}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{event.title}</p>
                       <p className="text-sm text-gray-600">
                         {new Date(event.startAt).toLocaleTimeString([], {
                           hour: "2-digit",
@@ -143,7 +153,7 @@ export default function MentorCalendar() {
 
                     <button
                       onClick={() => handleDelete(event._id)}
-                      className="text-xs text-red-500 hover:underline"
+                      className="text-xs text-red-500 hover:underline shrink-0"
                     >
                       Delete
                     </button>

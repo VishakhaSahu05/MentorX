@@ -77,49 +77,49 @@ const IncomingCallModal = ({ caller, onAccept, onReject }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Caller profile picture with pulsing animation */}
-        <div className="relative mb-6 inline-block">
+        <div className="relative mb-5 sm:mb-6 inline-block">
           <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75"></div>
           <img
             src={caller.profilePic || DEFAULT_PIC}
             alt={caller.firstName}
-            className="relative w-32 h-32 rounded-full object-cover border-4 border-green-500 mx-auto"
+            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-green-500 mx-auto"
           />
         </div>
 
         {/* Caller name */}
-        <h2 className="text-white text-2xl font-semibold mb-2">
+        <h2 className="text-white text-xl sm:text-2xl font-semibold mb-2 truncate">
           {caller.firstName} {caller.lastName || ""}
         </h2>
 
         {/* Call status */}
-        <p className="text-gray-400 text-lg mb-8">Incoming video call...</p>
+        <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8">Incoming video call...</p>
 
         {/* Action buttons */}
         <div className="flex justify-center gap-6">
           {/* Reject button */}
           <button
             onClick={handleReject}
-            className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg"
             aria-label="Reject call"
           >
-            <PhoneOff className="w-7 h-7 text-white" />
+            <PhoneOff className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </button>
 
           {/* Accept button */}
           <button
             onClick={handleAccept}
-            className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-700 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg animate-pulse"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-600 hover:bg-green-700 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg animate-pulse"
             aria-label="Accept call"
           >
-            <Phone className="w-7 h-7 text-white" />
+            <Phone className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </button>
         </div>
 
         {/* Helper text */}
-        <p className="text-gray-500 text-sm mt-6">
+        <p className="text-gray-500 text-sm mt-5 sm:mt-6">
           Accept to start video call
         </p>
       </div>

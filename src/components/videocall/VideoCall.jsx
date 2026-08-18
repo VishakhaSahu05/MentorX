@@ -544,8 +544,8 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
       {/* CONTROLS */}
       <div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[9999]
-                      flex items-center gap-3 px-5 py-3 rounded-full
+        className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[9999]
+                      flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 rounded-full
                       bg-[#202124]/90 backdrop-blur-md border border-white/10 shadow-2xl"
       >
         <CtrlBtn

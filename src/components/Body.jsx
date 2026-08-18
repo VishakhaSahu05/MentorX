@@ -33,9 +33,9 @@ const Body = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#eefaf5]">
+    <div className="min-h-screen flex flex-col bg-[#eefaf5] overflow-x-hidden">
       <Navbar />
-      <main className="grow">
+      <main className="grow w-full">
         <Outlet />
       </main>
       <Footer />

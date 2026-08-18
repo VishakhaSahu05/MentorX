@@ -41,47 +41,49 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 bg-[#eefaf5]">
-      <div className="w-full max-w-md bg-[#0f2f26] rounded-2xl p-8 shadow-xl text-white">
-        <h2 className="text-3xl font-semibold text-center mb-2">
+    <div className="flex items-center justify-center min-h-screen px-4 py-24 bg-[#eefaf5]">
+      <div className="w-full max-w-md bg-[#0f2f26] rounded-2xl p-6 sm:p-8 shadow-xl text-white">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-2">
           Welcome back
         </h2>
 
-        <p className="text-center text-gray-400 mb-4">
+        <p className="text-center text-gray-400 mb-4 text-sm sm:text-base">
           Login to continue your MentorX journey
         </p>
 
         {/* ✅ ERROR MESSAGE */}
         {error && (
-          <p className="text-red-400 text-sm text-center mb-4">{error}</p>
+          <p className="text-red-400 text-sm text-center mb-4 bg-red-400/10 border border-red-400/20 rounded-lg py-2 px-3">
+            {error}
+          </p>
         )}
 
         <form className="space-y-5" onSubmit={handleLogin}>
           <div>
-            <label className="block text-sm mb-1 text-gray-300">Email</label>
+            <label className="block text-sm mb-1.5 text-gray-300">Email</label>
             <input
               type="email"
               value={emailId}
               onChange={(e) => setEmailId(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-[#0b1f1a]"
+              className="w-full px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm mb-1 text-gray-300">Password</label>
+            <label className="block text-sm mb-1.5 text-gray-300">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-[#0b1f1a]"
+              className="w-full px-4 py-3 rounded-lg bg-[#0b1f1a] border border-white/10 outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 mt-4 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold"
+            className="w-full py-3 mt-4 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f2f26]"
           >
             Login
           </button>

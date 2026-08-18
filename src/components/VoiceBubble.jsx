@@ -18,7 +18,7 @@ const VoiceBubble = ({ src }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-[#6D28D9] px-4 py-3 rounded-2xl w-65">
+    <div className="flex items-center gap-3 bg-[#6D28D9] px-4 py-3 rounded-2xl w-full max-w-65 min-w-0">
       {/* PLAY BUTTON */}
       <button
         onClick={togglePlay}
