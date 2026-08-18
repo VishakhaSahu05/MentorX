@@ -282,10 +282,13 @@ const Chat = () => {
       </style>
 
       <div className="h-dvh bg-[#f4f6f5] flex justify-center sm:pt-24 sm:pb-6 sm:px-4">
-        <div className="w-full sm:max-w-2xl lg:max-w-3xl h-full sm:h-[82vh] bg-black sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="w-full sm:max-w-2xl lg:max-w-3xl h-dvh sm:h-[82vh] bg-black sm:rounded-3xl shadow-none sm:shadow-2xl flex flex-col overflow-hidden">
 
           {/* ================= HEADER ================= */}
-          <div className="flex items-center justify-between gap-3 px-3 sm:px-5 py-3 sm:py-4 border-b border-white/10 shrink-0">
+          <div
+            className="flex items-center justify-between gap-3 px-3 sm:px-5 py-3 sm:py-4 border-b border-white/10 shrink-0 sticky top-0 z-10 bg-black"
+            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+          >
             {/* Left: back + avatar + name */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <ArrowLeft
@@ -437,7 +440,10 @@ const Chat = () => {
           </div>
 
           {/* ================= INPUT ================= */}
-          <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-t border-white/10 flex items-center gap-2 sm:gap-3 shrink-0">
+          <div
+            className="px-3 sm:px-4 pt-2.5 sm:pt-3 border-t border-white/10 flex items-center gap-2 sm:gap-3 shrink-0 sticky bottom-0 z-10 bg-black"
+            style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
+          >
             <Camera size={20} className="text-white shrink-0" />
 
             <input
