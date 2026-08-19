@@ -1,7 +1,12 @@
 import { useRef, useState } from "react";
 import { Mic, Trash2 } from "lucide-react";
 
-const VoiceRecorder = ({ onSend }) => {
+const VoiceRecorder = ({
+  onSend,
+  iconClassName = "text-white",
+  accentClassName = "bg-purple-500",
+  sendButtonClassName = "bg-purple-600",
+}) => {
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const startTimeRef = useRef(null);
@@ -96,7 +101,7 @@ const VoiceRecorder = ({ onSend }) => {
         <button
           onMouseDown={startRecording}
           onTouchStart={startRecording}
-          className="text-white"
+          className={iconClassName}
         >
           <Mic size={22} />
         </button>
@@ -119,7 +124,7 @@ const VoiceRecorder = ({ onSend }) => {
             {[4, 7, 5, 9, 6, 8, 5, 7].map((h, i) => (
               <span
                 key={i}
-                className="w-[3px] bg-purple-500 rounded-full animate-wave"
+                className={`w-[3px] ${accentClassName} rounded-full animate-wave`}
                 style={{
                   height: `${h * 2}px`,
                   animationDelay: `${i * 0.12}s`,
@@ -137,8 +142,8 @@ const VoiceRecorder = ({ onSend }) => {
           <button
             onMouseUp={stopRecording}
             onTouchEnd={stopRecording}
-            className="w-8 h-8 bg-purple-600 rounded-full
-                       flex items-center justify-center"
+            className={`w-8 h-8 ${sendButtonClassName} rounded-full
+                       flex items-center justify-center`}
           >
             <Mic size={14} className="text-white" />
           </button>

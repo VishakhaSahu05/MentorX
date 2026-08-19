@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import ChatDock from "./ChatDock";
 import axios from "axios";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { BASE_URL } from "../utils/constant";
@@ -51,6 +52,7 @@ const Body = () => {
       <div className={isChatRoute ? "hidden sm:block" : undefined}>
         <Footer />
       </div>
+      <ChatDock />
     </div>
   );
 };

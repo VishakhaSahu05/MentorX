@@ -1,7 +1,11 @@
 import { useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
 
-const VoiceBubble = ({ src }) => {
+const VoiceBubble = ({
+  src,
+  bubbleClassName = "bg-[#6D28D9]",
+  iconColorClassName = "text-[#6D28D9]",
+}) => {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(null);
@@ -18,16 +22,16 @@ const VoiceBubble = ({ src }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-[#6D28D9] px-4 py-3 rounded-2xl w-full max-w-65 min-w-0">
+    <div className={`flex items-center gap-3 ${bubbleClassName} px-4 py-3 rounded-2xl w-full max-w-65 min-w-0`}>
       {/* PLAY BUTTON */}
       <button
         onClick={togglePlay}
         className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0"
       >
         {playing ? (
-          <Pause size={18} className="text-[#6D28D9]" />
+          <Pause size={18} className={iconColorClassName} />
         ) : (
-          <Play size={18} className="text-[#6D28D9] ml-0.5" />
+          <Play size={18} className={`${iconColorClassName} ml-0.5`} />
         )}
       </button>
 
