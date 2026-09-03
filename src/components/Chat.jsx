@@ -22,6 +22,7 @@ import VoiceRecorder from "../components/VoiceRecorder";
 import VoiceBubble from "../components/VoiceBubble";
 import { uploadVoice } from "../services/voiceApi";
 import VideoCall from "./videocall/VideoCall";
+import VoiceCall from "./voicecall/VoiceCall";
 import IncomingCallModal from "../components/IncomingCallModal";
 import AiSummaryButton from "../components/AiSummaryButton"; // ✨ AI Summary
 import { BASE_URL } from "../utils/constant";
@@ -40,9 +41,9 @@ const Chat = () => {
   const [message, setMessage] = useState("");
   const [showStudentProfile, setShowStudentProfile] = useState(false);
 
-  // Video call states
-  const [incomingCall, setIncomingCall] = useState(null);
-  const [activeCall, setActiveCall] = useState(null);
+  // Call states (shared between video & voice)
+  const [incomingCall, setIncomingCall] = useState(null); // { caller, type }
+  const [activeCall, setActiveCall] = useState(null); // { user, isCaller, type }
 
   const socketRef = useRef(null);
   const userRef = useRef(user);
@@ -133,9 +134,14 @@ const Chat = () => {
       ]);
     };
 
-    const onIncomingCall = ({ caller }) => {
-      console.log("Incoming call from:", caller);
-      setIncomingCall(caller);
+    const onIncomingVideoCall = ({ caller }) => {
+      console.log("Incoming video call from:", caller);
+      setIncomingCall({ caller, type: "video" });
+    };
+
+    const onIncomingVoiceCall = ({ caller }) => {
+      console.log("Incoming voice call from:", caller);
+      setIncomingCall({ caller, type: "voice" });
     };
 
     const onRejected = () => {
@@ -154,17 +160,25 @@ const Chat = () => {
     };
 
     socket.on("messageRecieved", onMessage);
-    socket.on("video-call:incoming", onIncomingCall);
+    socket.on("video-call:incoming", onIncomingVideoCall);
     socket.on("video-call:rejected", onRejected);
     socket.on("video-call:cancelled", onCancelled);
     socket.on("video-call:end", onEnd);
+    socket.on("voice-call:incoming", onIncomingVoiceCall);
+    socket.on("voice-call:rejected", onRejected);
+    socket.on("voice-call:cancelled", onCancelled);
+    socket.on("voice-call:end", onEnd);
 
     return () => {
       socket.off("messageRecieved", onMessage);
-      socket.off("video-call:incoming", onIncomingCall);
+      socket.off("video-call:incoming", onIncomingVideoCall);
       socket.off("video-call:rejected", onRejected);
       socket.off("video-call:cancelled", onCancelled);
       socket.off("video-call:end", onEnd);
+      socket.off("voice-call:incoming", onIncomingVoiceCall);
+      socket.off("voice-call:rejected", onRejected);
+      socket.off("voice-call:cancelled", onCancelled);
+      socket.off("voice-call:end", onEnd);
     };
   }, [userId, targetUserId]);
 
@@ -211,20 +225,31 @@ const Chat = () => {
     }
   };
 
-  //  VIDEO CALL HANDLERS
-  const handleStartCall = () => {
+  //  CALL HANDLERS (video & voice)
+  const handleStartVideoCall = () => {
     if (!targetUser || !user) return;
     setActiveCall({
       user: targetUser,
       isCaller: true,
+      type: "video",
+    });
+  };
+
+  const handleStartVoiceCall = () => {
+    if (!targetUser || !user) return;
+    setActiveCall({
+      user: targetUser,
+      isCaller: true,
+      type: "voice",
     });
   };
 
   const handleAcceptCall = () => {
     if (incomingCall) {
       setActiveCall({
-        user: incomingCall,
+        user: incomingCall.caller,
         isCaller: false,
+        type: incomingCall.type,
       });
       setIncomingCall(null);
     }
@@ -232,8 +257,8 @@ const Chat = () => {
 
   const handleRejectCall = () => {
     if (incomingCall) {
-      socketRef.current.emit("video-call:rejected", {
-        to: incomingCall._id,
+      socketRef.current.emit(`${incomingCall.type}-call:rejected`, {
+        to: incomingCall.caller._id,
       });
       setIncomingCall(null);
     }
@@ -241,7 +266,7 @@ const Chat = () => {
 
   const handleEndCall = () => {
     if (activeCall) {
-      socketRef.current.emit("video-call:end", {
+      socketRef.current.emit(`${activeCall.type}-call:end`, {
         to: activeCall.user._id,
       });
     }
@@ -319,12 +344,16 @@ const Chat = () => {
 
             {/* Right: action icons */}
             <div className="flex items-center gap-2.5 sm:gap-3 text-white shrink-0">
-              <Phone size={20} />
+              <Phone
+                size={20}
+                className="cursor-pointer hover:text-purple-400 transition-colors"
+                onClick={handleStartVoiceCall}
+              />
 
               <Video
                 size={20}
                 className="cursor-pointer hover:text-purple-400 transition-colors"
-                onClick={handleStartCall}
+                onClick={handleStartVideoCall}
               />
 
               {/* ✨ AI Summary Button */}
@@ -483,15 +512,26 @@ const Chat = () => {
       {/* Incoming Call Modal */}
       {incomingCall && (
         <IncomingCallModal
-          caller={incomingCall}
+          caller={incomingCall.caller}
+          callType={incomingCall.type}
           onAccept={handleAcceptCall}
           onReject={handleRejectCall}
         />
       )}
 
       {/* Active Video Call */}
-      {activeCall && (
+      {activeCall && activeCall.type === "video" && (
         <VideoCall
+          targetUser={activeCall.user}
+          isCaller={activeCall.isCaller}
+          onClose={handleEndCall}
+          socketRef={socketRef}
+        />
+      )}
+
+      {/* Active Voice Call */}
+      {activeCall && activeCall.type === "voice" && (
+        <VoiceCall
           targetUser={activeCall.user}
           isCaller={activeCall.isCaller}
           onClose={handleEndCall}

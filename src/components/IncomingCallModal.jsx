@@ -58,7 +58,7 @@ const useRingtone = () => {
 };
 
 
-const IncomingCallModal = ({ caller, onAccept, onReject }) => {
+const IncomingCallModal = ({ caller, callType = "video", onAccept, onReject }) => {
   const { playRing, stopRing } = useRingtone();
 
   useEffect(() => {
@@ -95,7 +95,9 @@ const IncomingCallModal = ({ caller, onAccept, onReject }) => {
         </h2>
 
         {/* Call status */}
-        <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8">Incoming video call...</p>
+        <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8">
+          Incoming {callType === "voice" ? "voice" : "video"} call...
+        </p>
 
         {/* Action buttons */}
         <div className="flex justify-center gap-6">
@@ -120,7 +122,7 @@ const IncomingCallModal = ({ caller, onAccept, onReject }) => {
 
         {/* Helper text */}
         <p className="text-gray-500 text-sm mt-5 sm:mt-6">
-          Accept to start video call
+          Accept to start {callType === "voice" ? "voice" : "video"} call
         </p>
       </div>
     </div>
