@@ -14,10 +14,15 @@ import {
   Pencil,
   Monitor,
   MonitorOff,
+  Circle,
+  Square,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { DEFAULT_PIC, BASE_URL } from "../../utils/constant";
+import useCallRecording from "../../hooks/useCallRecording";
+import RecordingConsentModal from "./RecordingConsentModal";
+import RecordingIndicator from "./RecordingIndicator";
 
 const Whiteboard = React.lazy(() => import("./Whiteboard"));
 
@@ -64,6 +69,14 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
   const localUidNum = (parseInt(user._id.slice(-8), 16) % 100000) + 1;
   // Screen share uses a different UID so Agora treats it as a separate publisher
   const screenUidNum = localUidNum + 100000;
+
+  // Recording is performed by Agora Cloud Recording on the server, not in this
+  // browser. This hook only mirrors the server's state and drives the controls.
+  const recording = useCallRecording({
+    socketRef,
+    targetUserId: targetUser._id,
+    currentUserId: user._id,
+  });
 
   //helpers 
   const playInto = useCallback((track, divId) => {
@@ -349,6 +362,39 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1c1e21] text-white overflow-hidden">
+      {/* Persistent recording badge — visible to BOTH participants */}
+      {recording.state !== "idle" && (
+        <RecordingIndicator
+          startedAt={recording.startedAt}
+          state={
+            recording.state === "awaiting-consent"
+              ? "requesting"
+              : recording.state
+          }
+        />
+      )}
+
+      {/* Consent gate for the participant who did not press Record */}
+      {recording.consentRequest && (
+        <RecordingConsentModal
+          from={recording.consentRequest.from}
+          busy={recording.busy}
+          onAccept={() => recording.respond(true)}
+          onDecline={() => recording.respond(false)}
+        />
+      )}
+
+      {/* Recording error toast */}
+      {recording.error && (
+        <div
+          className="absolute top-16 left-1/2 -translate-x-1/2 z-[9998] px-4 py-2 rounded-lg
+                     bg-red-600/90 text-white text-xs max-w-sm text-center cursor-pointer"
+          onClick={recording.clearError}
+        >
+          {recording.error}
+        </div>
+      )}
+
       {/*  NORMAL VIDEO MODE */}
       <div
         className="absolute inset-0 transition-opacity duration-200"
@@ -572,6 +618,29 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
           {isSharingScreen ? <MonitorOff size={18} /> : <Monitor size={18} />}
         </CtrlBtn>
 
+        {/* Record / Stop Recording — either participant may start or stop */}
+        <CtrlBtn
+          danger={recording.isActive}
+          onClick={recording.isActive ? recording.stop : recording.request}
+          disabled={recording.busy || recording.isBusyState}
+          title={
+            recording.isActive
+              ? "Stop recording"
+              : recording.isPendingMine
+                ? "Waiting for consent…"
+                : "Record this call"
+          }
+        >
+          {recording.isActive ? (
+            <Square size={16} fill="currentColor" />
+          ) : (
+            <Circle
+              size={18}
+              fill={recording.isPendingMine ? "currentColor" : "none"}
+            />
+          )}
+        </CtrlBtn>
+
         <CtrlBtn
           accent={showWhiteboard}
           onClick={() => {
@@ -625,11 +694,13 @@ const NameTag = ({ label }) => (
   </div>
 );
 
-const CtrlBtn = ({ onClick, title, danger, accent, children }) => (
+const CtrlBtn = ({ onClick, title, danger, accent, disabled, children }) => (
   <button
     onClick={onClick}
     title={title}
+    disabled={disabled}
     className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
       ${danger ? "bg-red-600 hover:bg-red-500" : accent ? "bg-orange-500 hover:bg-orange-400" : "bg-white/15 hover:bg-white/25"}`}
   >
     {children}
