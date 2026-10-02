@@ -5,6 +5,7 @@ import {
   respondToRecordingConsent,
   stopRecording as stopRecordingApi,
 } from "../services/recordingApi";
+import { getSocket } from "../utils/socket";
 
 /**
  * Recording state machine for a video call.
@@ -47,15 +48,23 @@ const useCallRecording = ({ socketRef, targetUserId, currentUserId }) => {
     setStartedAt(rec.startedAt || null);
 
     switch (rec.status) {
-      case "pending":
+      case "pending": {
         // Pending means consent is outstanding. Whether we are waiting or being
         // asked is decided by who initiated.
-        setState(
-          String(rec.initiator) === String(currentUserId)
-            ? "awaiting-consent"
-            : "requesting",
-        );
+        const iStarted = String(rec.initiator) === String(currentUserId);
+        setState(iStarted ? "awaiting-consent" : "requesting");
+        // If we are the one being asked, surface the modal from server state
+        // too. The socket event may have been emitted before this component
+        // mounted (the receiver opens the call UI a moment later), and the
+        // modal only renders when consentRequest is set.
+        if (!iStarted) {
+          setConsentRequest({
+            recordingId: rec._id,
+            from: rec.initiatorUser || null,
+          });
+        }
         break;
+      }
       case "recording":
         setState("recording");
         break;
@@ -93,9 +102,17 @@ const useCallRecording = ({ socketRef, targetUserId, currentUserId }) => {
   }, [targetUserId, applyServerRecording]);
 
   // Server-pushed state changes.
+  //
+  // The socket is resolved lazily rather than read once: socketRef is a ref, so
+  // this effect never re-runs when socketRef.current is populated later. If the
+  // call mounts before Chat.jsx has assigned the socket (which is what happens
+  // for the participant receiving a consent request), reading it once would
+  // silently register no listeners at all and the consent modal would never
+  // appear. Fall back to the shared singleton socket, and retry briefly until
+  // one is available.
   useEffect(() => {
-    const socket = socketRef?.current;
-    if (!socket) return;
+    let cleanup = null;
+    let cancelled = false;
 
     const onConsentRequest = ({ recordingId: id, from }) => {
       setRecordingId(id);
@@ -135,22 +152,47 @@ const useCallRecording = ({ socketRef, targetUserId, currentUserId }) => {
       setError(reason || "Recording failed");
     };
 
-    socket.on("recording:consent-request", onConsentRequest);
-    socket.on("recording:started", onStarted);
-    socket.on("recording:declined", onDeclined);
-    socket.on("recording:stopping", onStopping);
-    socket.on("recording:processing", onProcessing);
-    socket.on("recording:ready", onReady);
-    socket.on("recording:failed", onFailed);
+    const attach = (socket) => {
+      socket.on("recording:consent-request", onConsentRequest);
+      socket.on("recording:started", onStarted);
+      socket.on("recording:declined", onDeclined);
+      socket.on("recording:stopping", onStopping);
+      socket.on("recording:processing", onProcessing);
+      socket.on("recording:ready", onReady);
+      socket.on("recording:failed", onFailed);
+
+      cleanup = () => {
+        socket.off("recording:consent-request", onConsentRequest);
+        socket.off("recording:started", onStarted);
+        socket.off("recording:declined", onDeclined);
+        socket.off("recording:stopping", onStopping);
+        socket.off("recording:processing", onProcessing);
+        socket.off("recording:ready", onReady);
+        socket.off("recording:failed", onFailed);
+      };
+    };
+
+    const resolve = () => socketRef?.current || getSocket();
+
+    const existing = resolve();
+    if (existing) {
+      attach(existing);
+    } else {
+      // Socket not ready yet — poll briefly instead of giving up for good.
+      const id = setInterval(() => {
+        if (cancelled) return;
+        const s = resolve();
+        if (s) {
+          clearInterval(id);
+          attach(s);
+        }
+      }, 200);
+      cleanup = () => clearInterval(id);
+    }
 
     return () => {
-      socket.off("recording:consent-request", onConsentRequest);
-      socket.off("recording:started", onStarted);
-      socket.off("recording:declined", onDeclined);
-      socket.off("recording:stopping", onStopping);
-      socket.off("recording:processing", onProcessing);
-      socket.off("recording:ready", onReady);
-      socket.off("recording:failed", onFailed);
+      cancelled = true;
+      if (cleanup) cleanup();
     };
   }, [socketRef]);
 
