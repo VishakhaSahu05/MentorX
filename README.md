@@ -181,3 +181,74 @@ User B's canvas updates in real time
 - 🗑️ Clear canvas
 - ↩️ Undo / Redo
 - 🔒 Lock tool, zoom, pan
+---
+
+## Video Call Recording (Agora Cloud Recording)
+
+Lets either participant record a video call. The recording is produced **server-side by
+Agora Cloud Recording**, so the final file always contains **both participants' video and
+both participants' audio** — it does not depend on one person's browser staying open.
+
+Recording never starts on its own. A call is completely normal and unrecorded until
+somebody presses the Record button, and the other person accepts.
+
+### Flow
+
+```
+Normal video call
+  │
+  │ 1. Participant A presses ● Record
+  ▼
+POST /recording/request
+  │
+  │ 2. Backend creates the session and asks B for consent
+  ▼
+Participant B sees "A wants to record this call"  [ Accept ] [ Decline ]
+  │
+  │ 3a. Decline -> nothing is recorded, call continues
+  │ 3b. Accept  -> POST /recording/:id/consent { accept: true }
+  ▼
+Backend calls Agora: acquire -> start (mode "mix")
+  │
+  │ 4. Agora joins the channel as an extra user, mixes both streams
+  ▼
+BOTH participants see a persistent "● REC 0:42" badge
+  │
+  │ 5. Someone presses ■ Stop, or the call ends
+  ▼
+Backend calls Agora stop -> file is written to private S3
+  │
+  ▼
+status = ready -> secure expiring link emailed to both participants
+```
+
+### UI pieces
+
+- `components/videocall/RecordingConsentModal.jsx` — consent gate shown to the
+  participant who did *not* press Record. Recording cannot start without Accept.
+- `components/videocall/RecordingIndicator.jsx` — the persistent `● REC` badge with a
+  live timer, shown to **both** participants the whole time recording is active.
+- `hooks/useCallRecording.js` — the recording state machine
+  (`idle → requesting / awaiting-consent → recording → stopping → processing`).
+- `services/recordingApi.js` — thin axios client for the recording endpoints.
+- The Record button lives in the existing `VideoCall.jsx` control bar:
+  `[ Mic ] [ Camera ] [ Screen ] [ ● Record ] [ Whiteboard ] [ End Call ]`
+  and becomes `■ Stop Recording` while a recording is running.
+
+### Key implementation details
+
+- **The backend is the source of truth.** The hook never decides on its own that a
+  recording is running; it mirrors the REST responses and the `recording:*` socket
+  events. On mount it calls `GET /recording/active` so a refresh or rejoin mid-call
+  still shows the correct REC state.
+- **No browser `MediaRecorder`.** The browser only presses buttons; Agora's servers do
+  the capturing and the upload. Closing the tab does not corrupt the recording.
+- Socket events consumed: `recording:consent-request`, `recording:started`,
+  `recording:declined`, `recording:stopping`, `recording:processing`,
+  `recording:ready`, `recording:failed`.
+- The Record button is disabled while a request is in flight or while the recording is
+  stopping/processing, so a participant cannot start two sessions by double-clicking.
+- If both participants press Record at nearly the same moment, the loser receives
+  `409` and simply adopts the winner's session — only one recording ever exists.
+- Recordings are private: the app only ever receives short-lived presigned URLs, never
+  a public S3 link.
