@@ -117,9 +117,20 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
           socketRef.current?.emit("video-call:start", { to: targetUser._id });
         }
 
+        // credentials: "include" is required — the token endpoint is
+        // authenticated and the session lives in an httpOnly cookie, which
+        // fetch does not send by default.
         const res = await fetch(
           `${BASE_URL}/api/agora-token?channelName=${channelName}&uid=${localUidNum}`,
+          { credentials: "include" },
         );
+        if (!res.ok) {
+          throw new Error(
+            res.status === 401
+              ? "Your session has expired. Please log in again."
+              : `Could not get a call token (${res.status})`,
+          );
+        }
         const { token, appId } = await res.json();
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
