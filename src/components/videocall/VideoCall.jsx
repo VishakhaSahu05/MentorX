@@ -254,6 +254,14 @@ const VideoCallInner = ({ user, targetUser, onClose, isCaller, socketRef }) => {
     if (!agoraReady) return;
     if (screenActive && !showWhiteboard) {
       const id = setTimeout(() => {
+        // Attach the shared screen itself too. startScreenShare fires its own
+        // timer immediately after setScreenActive(true), but the screen-share
+        // layout has not rendered at that point, so playInto cannot find
+        // #vc-screen-main and silently gives up — leaving a black screen.
+        // Doing it here runs after the layout exists.
+        const screenTrack =
+          localScreenTrackRef.current || remoteScreenTrackRef.current;
+        playInto(screenTrack, "vc-screen-main");
         playInto(localVideoTrackRef.current, "vc-local-screen-pip");
         playInto(remoteVideoTrackRef.current, "vc-remote-screen-pip");
       }, 80);
