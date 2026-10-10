@@ -4,7 +4,6 @@ import appStore from "./utils/appStore";
 
 import Body from "./components/Body";
 import Landing from "./components/Landing";
-import Mentors from "./components/Mentors";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Feed from "./components/Feed";
@@ -21,15 +20,7 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route element={<Body />}>
-            <Route
-              path="/"
-              element={
-                <>
-                  <Landing />
-                  <Mentors />
-                </>
-              }
-            />
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/feed" element={<Feed />} />

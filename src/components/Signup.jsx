@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
@@ -8,13 +8,15 @@ import { BASE_URL } from "../utils/constant";
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  // "Become a mentor" links arrive with ?role=mentor
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     emailId: "",
     password: "",
-    role: "student",
+    role: searchParams.get("role") === "mentor" ? "mentor" : "student",
   });
 
   const [error, setError] = useState("");
