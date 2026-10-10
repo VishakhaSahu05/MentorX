@@ -6,6 +6,13 @@ import { Menu, X } from "lucide-react";
 import { removeUser } from "../utils/userSlice";
 import { BASE_URL } from "../utils/constant";
 
+// Sections of the landing page (see Landing.jsx).
+const SECTION_LINKS = [
+  { label: "Features", to: "/#features" },
+  { label: "How it works", to: "/#how-it-works" },
+  { label: "Mentors", to: "/#mentors" },
+];
+
 const Navbar = () => {
   const user = useSelector((store) => store.user);
   const dispatch = useDispatch();
@@ -56,10 +63,11 @@ const Navbar = () => {
 
         {/* CENTER LINKS */}
         <nav className="hidden lg:flex gap-10 text-lg text-gray-300">
-          <span className="hover:text-emerald-400 cursor-pointer transition-colors">Engineering</span>
-          <span className="hover:text-emerald-400 cursor-pointer transition-colors">Design</span>
-          <span className="hover:text-emerald-400 cursor-pointer transition-colors">AI</span>
-          <span className="hover:text-emerald-400 cursor-pointer transition-colors">Startup</span>
+          {SECTION_LINKS.map(({ label, to }) => (
+            <Link key={to} to={to} className="hover:text-emerald-400 transition-colors">
+              {label}
+            </Link>
+          ))}
         </nav>
 
         {/* RIGHT SIDE (DESKTOP) */}
@@ -190,10 +198,16 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-white/10 bg-[#0b1f1a] px-4 sm:px-6 py-4 space-y-1 max-h-[calc(100dvh-64px)] overflow-y-auto">
           <nav className="flex flex-col gap-1 text-gray-300 text-base pb-2 mb-2 border-b border-white/10">
-            <span className="px-3 py-2.5 rounded-lg hover:bg-white/10 cursor-pointer transition-colors">Engineering</span>
-            <span className="px-3 py-2.5 rounded-lg hover:bg-white/10 cursor-pointer transition-colors">Design</span>
-            <span className="px-3 py-2.5 rounded-lg hover:bg-white/10 cursor-pointer transition-colors">AI</span>
-            <span className="px-3 py-2.5 rounded-lg hover:bg-white/10 cursor-pointer transition-colors">Startup</span>
+            {SECTION_LINKS.map(({ label, to }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
           </nav>
 
           {!user && (

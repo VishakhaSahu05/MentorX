@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Display serif for landing-page headings (loaded in index.html). */
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+}
